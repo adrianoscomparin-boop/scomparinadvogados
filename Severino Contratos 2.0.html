@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Severino dos Contratos</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Georgia, serif; background: #1c0f00; min-height: 100vh; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #7a4510; border-radius: 4px; }
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #6b3010 0%, #8a4518 50%, #6b3010 100%);
+  border-bottom: 3px solid #c9922a;
+  padding: 0 24px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.logo-area { display: flex; align-items: center; gap: 14px; }
+.logo-svg { width: 54px; height: 54px; flex-shrink: 0; }
+.logo-text { display: flex; flex-direction: column; }
+.logo-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff8e8;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.2);
+}
+.logo-sub {
+  font-size: 10px;
+  color: rgba(255,220,150,0.75);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-family: Arial, sans-serif;
+}
+.tab-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.15s; font-family: Arial, sans-serif; }
+.tab-btn.active { background: #c9922a; color: #1a0800; }
+.tab-btn.inactive { background: rgba(255,255,255,0.18); color: #fff3d0; border: 1px solid rgba(255,220,150,0.4); }
+.tab-btn.inactive:hover { background: rgba(255,255,255,0.28); }
+
+/* LAYOUT */
+.layout { display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 72px); background: #f5ede0; }
+
+/* SIDEBAR */
+.sidebar { background: #f0e4cc; border-right: 1px solid #c9a070; overflow-y: auto; max-height: calc(100vh - 72px); position: sticky; top: 72px; }
+.sidebar-top { padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #7a4510; background: rgba(201,146,42,0.15); border-bottom: 1px solid #c9a070; font-family: Arial, sans-serif; }
+.sec-header { display: flex; align-items: center; gap: 8px; padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #e0c898; transition: background 0.15s; }
+.sec-header:hover { background: rgba(201,146,42,0.1); }
+.sec-title { flex: 1; font-size: 13px; font-weight: 700; color: #2d1200; font-family: Arial, sans-serif; }
+.sec-badge { background: #7a3500; color: #e8c06a; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 700; font-family: Arial, sans-serif; }
+.clause-list { padding: 4px 10px 10px; display: none; }
+.clause-list.open { display: block; }
+.clause-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1.5px solid transparent; background: white; margin-bottom: 5px; cursor: pointer; box-shadow: 0 1px 4px rgba(90,30,0,0.08); transition: all 0.15s; }
+.clause-item:hover { border-color: #e8a040; background: #fffbf0; }
+.clause-item.selected { border-color: #c9922a; background: #fffbf0; box-shadow: 0 0 0 2px rgba(201,146,42,0.15); }
+.clause-item.req { cursor: default; }
+.clause-check { width: 18px; height: 18px; border-radius: 4px; border: 2px solid #c9a070; display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; flex-shrink: 0; margin-top: 1px; }
+.clause-item.selected .clause-check { background: #c9922a; border-color: #c9922a; }
+.clause-name { font-size: 12px; font-weight: 700; color: #1a0800; font-family: Arial, sans-serif; }
+.clause-desc { font-size: 11px; color: #7a5a30; margin-top: 2px; font-family: Arial, sans-serif; }
+.clause-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; flex-shrink: 0; margin-top: 2px; font-family: Arial, sans-serif; }
+
+/* MAIN */
+.main { padding: 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; background: #f5ede0; }
+.card { background: white; border-radius: 10px; border: 1px solid #d4b080; box-shadow: 0 2px 12px rgba(90,30,0,0.1); overflow: hidden; }
+.card-head { padding: 12px 20px; border-bottom: 1px solid #e8d0a0; background: #fdf8f0; display: flex; align-items: center; gap: 10px; }
+.card-icon { background: #c9922a; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+.card-title { font-size: 15px; font-weight: 700; color: #1a0800; font-family: Arial, sans-serif; }
+.card-sub { font-size: 11px; color: #8a6030; font-family: Arial, sans-serif; }
+.card-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.grupo-box { background: #fdf8f0; border-radius: 8px; padding: 16px; border: 1px solid #e0c890; }
+.grupo-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.grupo-title { font-size: 13px; font-weight: 700; color: #7a3500; font-family: Arial, sans-serif; }
+.add-btn { padding: 5px 14px; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; transition: opacity 0.15s; }
+.add-btn:hover { opacity: 0.88; }
+.genero-box { background: rgba(201,146,42,0.08); border-radius: 8px; padding: 10px; margin-bottom: 12px; border: 1px solid rgba(201,146,42,0.2); }
+.genero-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.gen-btn { flex: 1; padding: 6px 4px; border-radius: 6px; border: 2px solid #c9a070; background: white; cursor: pointer; font-size: 12px; font-weight: 700; color: #7a5030; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: Arial, sans-serif; transition: all 0.15s; }
+.gen-btn.on { border-color: #c9922a; background: #fdf5e0; color: #7a3500; }
+.pessoa-card { background: white; border: 1.5px solid #e0c890; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+.pessoa-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; background: #fdf8f0; border-bottom: 1px solid #f0e0c0; }
+.pessoa-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 700; flex-shrink: 0; font-family: Arial, sans-serif; }
+.pessoa-body { padding: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.full { grid-column: 1 / -1; }
+label { font-size: 10px; font-weight: 700; color: #7a3500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; font-family: Arial, sans-serif; }
+input, select, textarea { width: 100%; padding: 7px 10px; border-radius: 7px; border: 1.5px solid #d4b080; background: #fdf8f0; font-size: 13px; outline: none; font-family: Georgia, serif; box-sizing: border-box; color: #1a0800; transition: border-color 0.15s; }
+input:focus, select:focus, textarea:focus { border-color: #c9922a; background: white; box-shadow: 0 0 0 3px rgba(201,146,42,0.1); }
+textarea { resize: vertical; }
+.varbox { background: #f0f8ff; border: 1.5px solid #90c0d8; border-radius: 8px; padding: 14px; }
+.var-title { font-size: 12px; font-weight: 700; color: #1a4060; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; font-family: Arial, sans-serif; }
+.var-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.var-chip { display: inline-block; background: white; border: 1px solid #90c0d8; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: monospace; color: #1a5080; }
+.add-var-btn { padding: 5px 12px; background: #1a5080; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700; font-family: Arial, sans-serif; }
+.del-var-btn { background: #fde8e8; border: none; border-radius: 4px; color: #7a1a1a; cursor: pointer; padding: 3px 7px; font-size: 11px; }
+.preview-body { padding: 20px; max-height: 420px; overflow-y: auto; }
+.preview-empty { text-align: center; padding: 32px; color: #b09070; }
+.preview-clause { margin-bottom: 12px; padding: 10px 14px; border-left: 4px solid #c9922a; background: #fdf8f0; border-radius: 0 8px 8px 0; }
+.preview-clause-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #7a3500; margin-bottom: 4px; font-family: Arial, sans-serif; }
+.preview-clause-text { font-size: 12px; line-height: 1.7; white-space: pre-line; color: #1a0800; }
+.gerar-btn { width: 100%; padding: 14px 24px; background: linear-gradient(135deg, #7a3500, #c9922a); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: Georgia, serif; box-shadow: 0 4px 16px rgba(122,53,0,0.35); letter-spacing: 0.5px; transition: all 0.2s; }
+.gerar-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(122,53,0,0.45); }
+.gerar-btn:disabled { background: #c0a080; cursor: not-allowed; transform: none; box-shadow: none; }
+.reset-btn { width: 100%; padding: 10px; background: transparent; border: 1.5px solid #c9a070; border-radius: 8px; font-size: 13px; color: #7a5030; cursor: pointer; font-family: Georgia, serif; transition: all 0.15s; }
+.reset-btn:hover { border-color: #7a3500; color: #7a3500; }
+.msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; font-family: Arial, sans-serif; }
+.msg.ok { background: #e8f5e8; border: 1px solid #a0c8a0; color: #1a5a1a; }
+.msg.err { background: #fde8e8; border: 1px solid #c8a0a0; color: #5a1a1a; }
+.banco-wrap { padding: 24px; max-width: 1000px; margin: 0 auto; }
+.banco-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.new-btn { padding: 10px 20px; background: linear-gradient(135deg,#7a3500,#c9922a); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
+.hints-box { background: #fdf8f0; border: 1px solid #e0c890; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+.hint-chip { background: white; border: 1px solid #d4b080; border-radius: 6px; padding: 3px 8px; font-size: 11px; display: inline-block; margin: 2px; }
+.clause-card { background: white; border: 1.5px solid #e0c890; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+.clause-card.editing { border-color: #c9922a; }
+.clause-card-head { padding: 12px 16px; display: flex; align-items: center; gap: 10px; background: #fdf8f0; }
+.clause-card.editing .clause-card-head { background: #fdf5e0; }
+.clause-card-edit { padding: 16px; border-top: 1px solid #e0c890; background: #fdfaf5; }
+.preview-tpl { background: #f5ead0; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; white-space: pre-line; border-left: 3px solid #c9922a; }
+.modal-bg { position: fixed; inset: 0; background: rgba(26,8,0,0.7); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { background: white; border-radius: 16px; width: 100%; max-width: 660px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(90,30,0,0.4); }
+.modal-head { padding: 16px 20px; border-bottom: 1px solid #e0c890; display: flex; align-items: center; justify-content: space-between; background: #fdf8f0; border-radius: 16px 16px 0 0; }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #7a5030; }
+
+/* FOOTER CRÉDITOS */
+.footer { background: #1a0800; border-top: 2px solid #7a3500; padding: 14px 24px; text-align: center; }
+.footer-text { font-size: 11px; color: rgba(201,146,42,0.6); font-family: Arial, sans-serif; letter-spacing: 0.5px; }
+.footer-dev { color: #c9922a; font-weight: 700; }
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-area">
+    <!-- SVG Logo Severino inline -->
+    <svg class="logo-svg" viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <ellipse cx="27" cy="50" rx="16" ry="8" fill="#3d1a00"/>
+      <rect x="18" y="36" width="18" height="16" rx="4" fill="#4a2006"/>
+      <!-- Suspenders -->
+      <rect x="22" y="37" width="3" height="14" rx="1.5" fill="#c9821a"/>
+      <rect x="29" y="37" width="3" height="14" rx="1.5" fill="#c9821a"/>
+      <!-- Neck -->
+      <rect x="23" y="30" width="8" height="9" rx="3" fill="#c07040"/>
+      <!-- Face -->
+      <ellipse cx="27" cy="23" rx="13" ry="14" fill="#c07040"/>
+      <ellipse cx="27" cy="26" rx="11" ry="10" fill="#a85020"/>
+      <ellipse cx="27" cy="17" rx="11" ry="9" fill="#c87848"/>
+      <!-- Eyes -->
+      <ellipse cx="22" cy="22" rx="3" ry="2.5" fill="white"/>
+      <ellipse cx="32" cy="22" rx="3" ry="2.5" fill="white"/>
+      <circle cx="22.5" cy="22.5" r="1.8" fill="#180800"/>
+      <circle cx="32.5" cy="22.5" r="1.8" fill="#180800"/>
+      <!-- Eyebrows -->
+      <path d="M18 19 Q22 17 26 19" stroke="#180800" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M28 19 Q32 17 36 19" stroke="#180800" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <!-- Mustache -->
+      <path d="M21 27 Q27 30 33 27" stroke="#180800" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M18 25 Q21 24 24 27" stroke="#180800" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M36 25 Q33 24 30 27" stroke="#180800" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <!-- Nose -->
+      <ellipse cx="27" cy="25" rx="2.5" ry="1.8" fill="#904020"/>
+      <!-- Hat brim -->
+      <ellipse cx="27" cy="11" rx="18" ry="4" fill="#5a2e08"/>
+      <ellipse cx="27" cy="10" rx="17" ry="3.5" fill="#6a3810"/>
+      <!-- Hat crown -->
+      <path d="M12 11 Q13 0 27 -1 Q41 0 42 11 Z" fill="#4a2206"/>
+      <!-- Hat band -->
+      <rect x="13" y="8" width="28" height="4" rx="1.5" fill="#2a0e00"/>
+      <!-- Hat studs -->
+      <circle cx="19" cy="10" r="1.2" fill="#c9922a"/>
+      <circle cx="27" cy="10" r="1.2" fill="#c9922a"/>
+      <circle cx="35" cy="10" r="1.2" fill="#c9922a"/>
+    </svg>
+    <div class="logo-text">
+      <div class="logo-title">Severino dos Contratos</div>
+      <div class="logo-sub">Gerador Jurídico de Contratos</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="tab-btn active" onclick="setTab('editor')">✏️ Editor</button>
+    <button class="tab-btn inactive" onclick="setTab('banco')">🗂️ Banco de Cláusulas</button>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div id="tab-editor">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-top">📋 Selecione as cláusulas</div>
+      <div id="sidebar-content"></div>
+    </div>
+    <div class="main">
+
+      <!-- PARTES -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon">👥</div>
+          <div>
+            <div class="card-title">Partes do Contrato</div>
+            <div class="card-sub">Adicione vendedores e compradores</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="grupo-box">
+            <div class="grupo-head">
+              <div class="grupo-title">🏷️ Vendedores <span id="v-count" style="font-weight:400;color:#a08050;font-size:11px">(1 pessoa)</span></div>
+              <button class="add-btn" style="background:#c9922a" onclick="addPessoa('v')">+ Adicionar</button>
+            </div>
+            <div class="genero-box">
+              <label style="margin-bottom:6px">Gênero do grupo</label>
+              <div class="genero-row">
+                <button class="gen-btn on" id="vG-M" onclick="setGenGrupo('v','M')">👨 Masculino/Misto</button>
+                <button class="gen-btn" id="vG-F" onclick="setGenGrupo('v','F')">👩 Feminino (todas)</button>
+              </div>
+              <div id="v-preview" style="font-size:11px;color:#7a3500;font-style:italic;font-family:Arial,sans-serif">Tratamento: <strong>O VENDEDOR · DO VENDEDOR · AO VENDEDOR</strong></div>
+            </div>
+            <div id="vendedores-list"></div>
+          </div>
+          <div class="grupo-box">
+            <div class="grupo-head">
+              <div class="grupo-title">🏷️ Compradores <span id="c-count" style="font-weight:400;color:#a08050;font-size:11px">(1 pessoa)</span></div>
+              <button class="add-btn" style="background:#3d5a2a" onclick="addPessoa('c')">+ Adicionar</button>
+            </div>
+            <div class="genero-box">
+              <label style="margin-bottom:6px">Gênero do grupo</label>
+              <div class="genero-row">
+                <button class="gen-btn on" id="cG-M" onclick="setGenGrupo('c','M')">👨 Masculino/Misto</button>
+                <button class="gen-btn" id="cG-F" onclick="setGenGrupo('c','F')">👩 Feminino (todas)</button>
+              </div>
+              <div id="c-preview" style="font-size:11px;color:#7a3500;font-style:italic;font-family:Arial,sans-serif">Tratamento: <strong>O COMPRADOR · DO COMPRADOR · AO COMPRADOR</strong></div>
+            </div>
+            <div id="compradores-list"></div>
+          </div>
+          <!-- OBJETO -->
+          <div class="grupo-box">
+            <div class="grupo-title" style="margin-bottom:12px">📦 Objeto e Contrato</div>
+            <div class="grid2">
+              <div>
+                <label>Tipo de Contrato</label>
+                <select id="tipo_contrato" onchange="updatePreview()">
+                  <option value="COMPRA E VENDA DE IMÓVEL URBANO">Compra e Venda de Imóvel Urbano</option>
+                  <option value="COMPROMISSO DE COMPRA E VENDA DE IMÓVEL URBANO">Compromisso de Compra e Venda de Imóvel Urbano</option>
+                  <option value="COMPRA E VENDA DE LOTE URBANO">Compra e Venda de Lote Urbano</option>
+                  <option value="COMPROMISSO DE COMPRA E VENDA DE LOTE URBANO">Compromisso de Compra e Venda de Lote Urbano</option>
+                  <option value="COMPRA E VENDA DE IMÓVEL URBANO COM DAÇÃO EM PAGAMENTO">Compra e Venda com Dação em Pagamento</option>
+                  <option value="COMPROMISSO DE COMPRA E VENDA DE IMÓVEL URBANO COM DAÇÃO EM PAGAMENTO">Compromisso de Compra e Venda com Dação em Pagamento</option>
+                </select>
+              </div>
+              <div>
+                <label>Natureza do Imóvel</label>
+                <select id="objeto_natureza" onchange="updatePreview()">
+                  <option value="">Selecionar...</option>
+                  <option>residencial</option><option>comercial</option><option>misto</option><option>rural</option>
+                </select>
+              </div>
+              <div><label>Área Construída (m²)</label><input id="objeto_area_const" placeholder="Ex: 180,52" oninput="updatePreview()"/></div>
+              <div><label>Área Total do Terreno (m²)</label><input id="objeto_area_tot" placeholder="Ex: 365,00" oninput="updatePreview()"/></div>
+              <div class="full"><label>Logradouro do Imóvel</label><input id="objeto_logradouro" placeholder="Ex: Rua Pontes de Miranda" oninput="updatePreview()"/></div>
+              <div><label>Número</label><input id="objeto_numero" placeholder="Ex: 375" oninput="updatePreview()"/></div>
+              <div><label>Quadra / Lote</label><input id="objeto_quadra" placeholder="Ex: QD 46 LT 18" oninput="updatePreview()"/></div>
+              <div><label>Bairro / Loteamento</label><input id="objeto_bairro" placeholder="Ex: Jardim Bougainville" oninput="updatePreview()"/></div>
+              <div><label>Cidade / UF do Imóvel</label><input id="objeto_cidade" placeholder="Ex: Sinop/MT" oninput="updatePreview()"/></div>
+              <div><label>CEP do Imóvel</label><input id="objeto_cep" placeholder="Ex: 78.555-881" oninput="updatePreview()"/></div>
+              <div><label>Matrícula no CRI</label><input id="objeto_matricula" placeholder="Ex: 56.759" oninput="updatePreview()"/></div>
+              <div><label>Valor Total (R$)</label><input id="objeto_valor" placeholder="Ex: 521.000,00" oninput="updatePreview()"/></div>
+              <div class="full"><label>Valor por Extenso</label><input id="objeto_valor_ext" placeholder="Ex: quinhentos e vinte e um mil reais" oninput="updatePreview()"/></div>
+              <div><label>Cidade do Contrato</label><input id="contrato_cidade" placeholder="Ex: Sinop" oninput="updatePreview()"/></div>
+              <div><label>Data de Assinatura</label><input type="date" id="contrato_data" onchange="updatePreview()"/></div>
+            </div>
+          </div>
+          <!-- VARIÁVEIS PERSONALIZADAS -->
+          <div class="varbox">
+            <div class="var-title">
+              <span>🔧 Variáveis Personalizadas <span style="font-size:10px;font-weight:400;color:#3a6a9a">use <code>{{nome}}</code> nos templates</span></span>
+              <button class="add-var-btn" onclick="addVar()">+ Nova variável</button>
+            </div>
+            <div id="vars-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div class="card">
+        <div class="card-head" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="card-icon">👁️</div>
+            <div>
+              <div class="card-title">Pré-visualização</div>
+              <div class="card-sub">Atualizado em tempo real</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="partes-badge" style="font-size:11px;color:#7a5030;background:#fdf0d8;border:1px solid #d4b070;border-radius:20px;padding:3px 10px;font-family:Arial,sans-serif">1V · 1C</span>
+            <span id="clause-badge" style="background:#fdf0d8;border:1px solid #d4b070;border-radius:20px;padding:3px 12px;font-size:12px;color:#7a5030;font-family:Arial,sans-serif">cláusulas</span>
+          </div>
+        </div>
+        <div class="preview-body" id="preview-body">
+          <div class="preview-empty">
+            <div style="font-size:40px;margin-bottom:10px">🤠</div>
+            <p style="font-size:13px;font-family:Arial,sans-serif">Selecione cláusulas no painel à esquerda,<br>parceiro!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- GERAR -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon">⬇️</div>
+          <div>
+            <div class="card-title">Gerar Contrato</div>
+            <div class="card-sub">Baixe o contrato finalizado em Word (.docx)</div>
+          </div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:10px">
+          <div id="msg" class="hidden"></div>
+          <button class="gerar-btn" id="gerar-btn" onclick="gerarDocx()">⬇️ Gerar e Baixar Contrato (.docx)</button>
+          <button class="reset-btn" onclick="resetAll()">🔄 Limpar tudo e recomeçar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BANCO -->
+<div id="tab-banco" class="hidden" style="background:#f5ede0;min-height:calc(100vh - 72px)">
+  <div class="banco-wrap">
+    <div class="banco-head">
+      <div>
+        <h2 style="font-size:20px;font-weight:700;margin:0;color:#1a0800;font-family:Arial,sans-serif">🗂️ Banco de Cláusulas</h2>
+        <p id="banco-count" style="font-size:13px;color:#7a5030;margin:4px 0 0;font-family:Arial,sans-serif"></p>
+      </div>
+      <button class="new-btn" onclick="showModal()">➕ Nova Cláusula</button>
+    </div>
+    <div class="hints-box">
+      <div style="font-size:12px;font-weight:700;color:#7a3500;margin-bottom:8px;font-family:Arial,sans-serif">💡 Variáveis disponíveis nos templates:</div>
+      <div id="hints-list"></div>
+    </div>
+    <input id="search" placeholder="🔍 Buscar cláusula por nome ou seção..." style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #d4b080;background:white;font-size:14px;outline:none;margin-bottom:16px;font-family:Arial,sans-serif;color:#1a0800" oninput="renderBanco()"/>
+    <div id="banco-content"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div style="font-size:16px;font-weight:700;color:#1a0800;font-family:Arial,sans-serif">➕ Nova Cláusula</div>
+      <button class="close-btn" onclick="hideModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="hints-box">
+        <div style="font-size:11px;font-weight:700;color:#7a3500;margin-bottom:6px;font-family:Arial,sans-serif">💡 Variáveis disponíveis:</div>
+        <div id="hints-modal"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Nome *</label><input id="new-name" placeholder="Ex: Garantia Especial"/></div>
+        <div><label>Seção</label><select id="new-section"><option>Qualificação</option><option>Objeto</option><option>Preço e Pagamento</option><option>Posse e Entrega</option><option>Tributos</option><option>Garantias</option><option>Mora e Inadimplemento</option><option>Intermediação</option><option>Disposições Finais</option></select></div>
+        <div><label>Descrição</label><input id="new-desc" placeholder="Breve descrição"/></div>
+        <div><label>Tipo</label><select id="new-tag"><option value="optional">Opcional</option><option value="protection">Proteção</option></select></div>
+        <div class="full"><label>Texto da Cláusula *</label><textarea id="new-template" rows="6" placeholder="Ex: {{pronome_v_OS}} VENDEDOR{{sv_plural}} declaram que..." oninput="renderModalPreview()" style="font-family:monospace;font-size:12px"></textarea></div>
+        <div class="full" id="modal-preview"></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:4px">
+        <button onclick="addClause()" style="flex:1;padding:11px;background:linear-gradient(135deg,#7a3500,#c9922a);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif">💾 Adicionar ao Banco</button>
+        <button onclick="hideModal()" style="padding:11px 20px;background:white;border:1.5px solid #d4b080;color:#7a5030;border-radius:10px;font-size:14px;cursor:pointer;font-family:Arial,sans-serif">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">
+    <strong class="footer-dev">Severino dos Contratos</strong> · Sistema desenvolvido e programado por <strong class="footer-dev">Adriano Scomparin</strong> · (66) 99955-2744 · Sinop/MT
+  </div>
+</div>
+
+<script>
+const SECTIONS = ["Qualificação","Objeto","Preço e Pagamento","Posse e Entrega","Tributos","Garantias","Mora e Inadimplemento","Intermediação","Disposições Finais"];
+const ICONS = {"Qualificação":"👤","Objeto":"🏠","Preço e Pagamento":"💰","Posse e Entrega":"🔑","Tributos":"📋","Garantias":"🛡️","Mora e Inadimplemento":"⚠️","Intermediação":"🤝","Disposições Finais":"📜"};
+const TAG = {required:{bg:"#d4ead4",color:"#1a5a1a",lbl:"Obrig."},optional:{bg:"#fef3cd",color:"#7a5800",lbl:"Opcional"},protection:{bg:"#fde8e8",color:"#7a1a1a",lbl:"Proteção"}};
+const TOKEN_HINTS_BASE=[
+  ["{{bloco_vendedores}}","Qualificação completa de cada vendedor"],
+  ["{{bloco_compradores}}","Qualificação completa de cada comprador"],
+  ["{{tipo_contrato}}","Tipo do contrato"],["{{objeto_natureza}}","Natureza do imóvel"],
+  ["{{objeto_area_const}}","Área construída (m²)"],["{{objeto_area_tot}}","Área total do terreno (m²)"],
+  ["{{objeto_logradouro}}","Logradouro"],["{{objeto_numero}}","Número"],["{{objeto_quadra}}","Quadra/Lote"],
+  ["{{objeto_bairro}}","Bairro/Loteamento"],["{{objeto_cidade}}","Cidade/UF do imóvel"],
+  ["{{objeto_cep}}","CEP"],["{{objeto_matricula}}","Matrícula CRI"],
+  ["{{objeto_valor}}","Valor em R$"],["{{objeto_valor_ext}}","Valor por extenso"],
+  ["{{contrato_cidade}}","Cidade do contrato"],["{{contrato_data_fmt}}","Data formatada"],
+  ["{{sv_plural}}","Sufixo VENDEDOR"],["{{sc_plural}}","Sufixo COMPRADOR"],
+  ["{{pronome_v_OS}}","O/A/OS/AS — vendedor"],["{{pronome_v_dos}}","DO/DA/DOS/DAS"],
+  ["{{pronome_v_aos}}","AO/À/AOS/ÀS"],["{{pronome_v_estes}}","ESTE/ESTA..."],
+  ["{{pronome_c_OS}}","O/A/OS/AS — comprador"],["{{pronome_c_dos}}","DO/DA/DOS/DAS"],
+  ["{{pronome_c_aos}}","AO/À/AOS/ÀS"],["{{pronome_c_estes}}","ESTE/ESTA..."],
+  ["{{vendedor_N_email}}","E-mail vendedor N"],["{{vendedor_N_cel}}","Celular vendedor N"],
+  ["{{comprador_N_email}}","E-mail comprador N"],["{{comprador_N_cel}}","Celular comprador N"],
+];
+
+let clauses=[
+  {id:"qualificacao",section:"Qualificação",name:"Qualificação das Partes",desc:"Identificação completa — padrão SCOMPARIN",tag:"required",required:true,
+   template:`{{bloco_vendedores}}
+
+{{bloco_compradores}}
+
+Têm entre si, justo e contratado, o que segue:`},
+  {id:"objeto_imovel",section:"Objeto",name:"Objeto — Imóvel Urbano com Matrícula",desc:"Imóvel urbano com área construída, terreno e matrícula",tag:"required",required:true,
+   template:`CLÁUSULA 1ª - OBJETO DO CONTRATO
+
+1.1. O presente contrato tem como objeto a compra e venda de um imóvel urbano, de natureza {{objeto_natureza}}, devidamente caracterizado como uma edificação com área construída de {{objeto_area_const}} m², assentada sobre um terreno com área total de {{objeto_area_tot}} m², localizado na {{objeto_logradouro}}, n. {{objeto_numero}}, {{objeto_quadra}}, {{objeto_bairro}}, {{objeto_cidade}}, CEP {{objeto_cep}}, o qual se encontra devidamente registrado no Cartório de Registro de Imóveis de {{objeto_cidade}}, sob a matrícula n. {{objeto_matricula}}, livre e desembaraçado de quaisquer ônus reais, ações reais ou pessoais reipersecutórias, hipotecas, penhoras, arrestos, usufrutos ou qualquer outro gravame que possa comprometer a sua plena titularidade e disponibilidade.
+
+1.1.1. O imóvel descrito nesta cláusula é objeto da presente avença na sua integralidade, compreendendo todas as suas acessões, benfeitorias e instalações nele incorporadas, que fazem parte indissociável da unidade imobiliária ora transmitida.`},
+  {id:"objeto_lote",section:"Objeto",name:"Objeto — Lote Urbano",desc:"Para contratos de compra e venda de lote",tag:"optional",required:false,
+   template:`CLÁUSULA 1ª - OBJETO DO CONTRATO
+
+1.1. O presente contrato tem como objeto a compra e venda de um lote urbano, com área total de {{objeto_area_tot}} m², situado na cidade de {{objeto_cidade}}, na {{objeto_logradouro}}, {{objeto_quadra}}, {{objeto_bairro}}, CEP {{objeto_cep}}, livre e desembaraçado de quaisquer ônus reais, ações reais ou pessoais reipersecutórias, hipotecas, penhoras, arrestos, usufrutos ou qualquer outro gravame que possa comprometer a sua plena titularidade e disponibilidade.
+
+1.2. {{pronome_v_OS}} VENDEDOR{{sv_plural}} declara{{sv_plural=='ES'?'m':''}} que o imóvel encontra-se livre e desembaraçado de quaisquer ônus reais.`},
+  {id:"preco_basico",section:"Preço e Pagamento",name:"Preço — Valor Total (completar condições)",desc:"Cláusula de abertura com valor total — personalizar condições",tag:"required",required:true,
+   template:`CLÁUSULA 2ª – DO PREÇO E CONDIÇÕES DE PAGAMENTO
+
+2.1. O valor total da presente compra e venda é de R$ {{objeto_valor}} ({{objeto_valor_ext}}), que serão pagos {{pronome_c_dos}} COMPRADOR{{sc_plural}} {{pronome_v_aos}} VENDEDOR{{sv_plural}} da seguinte forma:
+
+[DESCREVA AS CONDIÇÕES DE PAGAMENTO AQUI — use as alíneas abaixo conforme necessário]`},
+  {id:"preco_avista",section:"Preço e Pagamento",name:"Pagamento — À Vista",desc:"Pagamento integral na assinatura via PIX/TED",tag:"optional",required:false,
+   template:`2.1. O valor total da presente compra e venda é de R$ {{objeto_valor}} ({{objeto_valor_ext}}), a serem pagos {{pronome_c_dos}} COMPRADOR{{sc_plural}} {{pronome_v_aos}} VENDEDOR{{sv_plural}} à vista, em moeda corrente nacional, no ato da assinatura do presente instrumento, mediante transferência bancária (PIX/TED), servindo o comprovante da transferência como recibo de quitação.`},
+  {id:"preco_entrada_saldo",section:"Preço e Pagamento",name:"Pagamento — Entrada (Arras) + Saldo",desc:"Entrada na assinatura + saldo em data futura",tag:"optional",required:false,
+   template:`a) ENTRADA: A título de ARRAS, {{pronome_c_OS}} COMPRADOR{{sc_plural}} deverão realizar a transferência bancária (PIX, TED ou DOC) do valor de R$ [VALOR DA ENTRADA] ([VALOR POR EXTENSO]) na data de assinatura do presente contrato;
+
+b) SALDO: R$ [VALOR DO SALDO] ([VALOR POR EXTENSO]), através de transferência bancária (PIX/TED), com vencimento para o dia [DATA].`},
+  {id:"preco_parcelado",section:"Preço e Pagamento",name:"Pagamento — Parcelado com Tabela",desc:"Múltiplas parcelas com datas de vencimento",tag:"optional",required:false,
+   template:`[ALÍNEA]) PARCELAMENTO: O valor de R$ [VALOR] ([VALOR POR EXTENSO]) deverá ser pago {{pronome_c_dos}} COMPRADOR{{sc_plural}} de forma parcelada, conforme datas de vencimentos e valores abaixo:
+
+PARCELA | VENCIMENTO | VALOR
+1ª      | [DATA]     | R$ [VALOR]
+2ª      | [DATA]     | R$ [VALOR]
+3ª      | [DATA]     | R$ [VALOR]`},
+  {id:"preco_dacao_veiculo",section:"Preço e Pagamento",name:"Pagamento — Dação em Pagamento (Veículo)",desc:"Parte do pagamento por entrega de veículo",tag:"optional",required:false,
+   template:`[ALÍNEA]) DAÇÃO EM PAGAMENTO: R$ [VALOR] ([VALOR POR EXTENSO]), através da transferência de um veículo [MARCA/MODELO], PLACA [PLACA], ANO/MODELO [ANO], CHASSI [CHASSI], RENAVAM [RENAVAM].
+
+[N].1. O veículo dado em dação em pagamento poderá ser transferido a partir da data de assinatura deste contrato, obrigando-se {{pronome_c_OS}} COMPRADOR{{sc_plural}} a fornecer {{pronome_v_aos}} VENDEDOR{{sv_plural}} toda a documentação necessária para a efetivação da transferência junto ao DETRAN-MT, ficando os custos por conta {{pronome_v_dos}} VENDEDOR{{sv_plural}}.`},
+  {id:"preco_dacao_imovel",section:"Preço e Pagamento",name:"Pagamento — Dação em Pagamento (Imóvel)",desc:"Parte do pagamento por entrega de imóvel",tag:"optional",required:false,
+   template:`[ALÍNEA]) DAÇÃO EM PAGAMENTO: Como parte integrante do preço ajustado, {{pronome_c_OS}} COMPRADOR{{sc_plural}} efetuarão o pagamento parcial da quantia de R$ [VALOR] ([VALOR POR EXTENSO]) mediante a entrega, em dação em pagamento, de um imóvel de sua propriedade localizado na [ENDEREÇO COMPLETO], com área construída de [ÁREA] m², registrado sob a matrícula n. [MATRÍCULA], do Cartório de Registro de Imóveis de [CIDADE].`},
+  {id:"conta_bancaria",section:"Preço e Pagamento",name:"Dados Bancários para Pagamento",desc:"Conta bancária exclusiva para recebimento dos valores",tag:"optional",required:false,
+   template:`[N].2. Os pagamentos deverão ser realizados exclusivamente na conta bancária abaixo, servindo como recibo o comprovante da transferência efetivamente realizada:
+
+• Banco n. [NÚMERO] – [NOME DO BANCO]
+• Agência: [AGÊNCIA]
+• Conta Corrente: [CONTA]
+• Favorecido(a): [NOME]
+• Chave PIX: [CHAVE]`},
+  {id:"entrega_imediata",section:"Posse e Entrega",name:"Entrega de Chaves — Imediata (pagamento da entrada)",desc:"Posse transferida no ato da assinatura com pagamento da entrada",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª - DA TRANSFERÊNCIA DE POSSE E ENTREGA DAS CHAVES
+
+[N].1. A transferência da posse do imóvel será realizada na data da assinatura deste contrato, mediante o pagamento integral da entrada prevista neste instrumento.
+
+[N].1.1. A entrega das chaves importará na imissão de posse {{pronome_c_dos}} COMPRADOR{{sc_plural}}, passando a correr, a partir dessa data, todos os riscos, encargos, tributos e demais responsabilidades sobre o imóvel em favor {{pronome_c_dos}} mesmos.`},
+  {id:"entrega_data",section:"Posse e Entrega",name:"Entrega de Chaves — Em Data Determinada",desc:"Posse transferida em data futura pactuada",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª - DA ENTREGA DAS CHAVES DO IMÓVEL
+
+[N].1. A entrega das chaves do imóvel objeto deste instrumento deverá ser realizada {{pronome_v_dos}} VENDEDOR{{sv_plural}} {{pronome_c_aos}} COMPRADOR{{sc_plural}} no dia [DATA], ocasião em que o imóvel deverá ser entregue em perfeitas condições de uso.
+
+[N].1.1. A entrega das chaves importará na imissão de posse {{pronome_c_dos}} COMPRADOR{{sc_plural}}, passando a correr, a partir dessa data, todos os riscos, encargos, tributos e demais responsabilidades sobre o imóvel em favor {{pronome_c_dos}} mesmos.`},
+  {id:"escritura",section:"Posse e Entrega",name:"Escritura Pública — Condições e Responsabilidades",desc:"Lavratura da escritura após quitação + custas pelo comprador",tag:"optional",required:false,
+   template:`[N].2. A outorga da escritura pública definitiva de compra e venda do imóvel ora pactuado subordina-se à quitação integral de todos os valores previstos neste instrumento.
+
+[N].2.1. Os emolumentos cartorários, ITBI, custas de registro imobiliário, laudêmio e quaisquer despesas conexas correrão exclusivamente por conta {{pronome_c_dos}} COMPRADOR{{sc_plural}}, eximindo-se {{pronome_v_OS}} VENDEDOR{{sv_plural}} de responsabilidade financeira a qualquer título.
+
+[N].2.2. A outorga da escritura pública deverá ser realizada em até 30 (trinta) dias após a integral quitação do preço acordado neste instrumento.
+
+[N].2.3. Caberá {{pronome_v_aos}} VENDEDOR{{sv_plural}} fornecer todos os documentos necessários para a lavratura da escritura, livres de ônus e pendências, no prazo acordado entre as partes.`},
+  {id:"tributos_padrao",section:"Tributos",name:"Responsabilidade por Tributos — Padrão",desc:"Anteriores ao vendedor, posteriores ao comprador",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª - RESPONSABILIDADE PELO PAGAMENTO DE TRIBUTOS
+
+[N].1. Fica estabelecido que todos os tributos, impostos, taxas e contribuições de qualquer natureza incidentes sobre o imóvel objeto deste contrato, com fato gerador anterior à data da assinatura deste instrumento, serão de inteira responsabilidade e deverão ser quitados integralmente {{pronome_v_dos}} VENDEDOR{{sv_plural}}, independentemente da data de seu vencimento ou de eventual cobrança posterior.
+
+[N].2. Todos os tributos, impostos, taxas e contribuições de qualquer natureza incidentes sobre o imóvel objeto deste contrato, com fato gerador posterior à data de assinatura deste instrumento, serão de inteira responsabilidade {{pronome_c_dos}} COMPRADOR{{sc_plural}}.
+
+[N].3. O inadimplemento de quaisquer das obrigações previstas nesta cláusula autoriza a parte adimplente a exigir o ressarcimento integral dos valores pagos, acrescidos de multa não compensatória de 2% (dois por cento), correção monetária pelo IPCA e juros de mora de 1% (um por cento) ao mês, sem prejuízo das demais penalidades previstas neste instrumento e na legislação aplicável.`},
+  {id:"garantia_vicios",section:"Garantias",name:"Garantia por Defeitos e Vícios Ocultos",desc:"90 dias acabamento + 5 anos estrutural (CC art. 618 + CDC art. 26)",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª – DA GARANTIA POR DEFEITOS E VÍCIOS OCULTOS NO IMÓVEL
+
+[N].1. {{pronome_v_OS}} VENDEDOR{{sv_plural}} garante{{sv_plural=='ES'?'m':''}} que o imóvel objeto deste contrato será entregue {{pronome_c_aos}} COMPRADOR{{sc_plural}} livre de qualquer vício ou defeito oculto que possa comprometer a sua utilização e habitabilidade.
+
+[N].1.1. Garantia para Defeitos Estruturais Graves: {{pronome_v_OS}} VENDEDOR{{sv_plural}} será(ão) responsável(is) pela reparação de defeitos estruturais graves, como rachaduras, infiltrações e falhas na estrutura do imóvel, desde que não sejam causados por mau uso. O prazo de garantia para esses defeitos será de 5 (cinco) anos, nos termos do art. 618 do Código Civil.
+
+[N].1.2. Garantia para Defeitos de Acabamento e Visíveis: O prazo será de 90 (noventa) dias a contar da data de entrega, nos termos do art. 26, II do Código de Defesa do Consumidor. {{pronome_c_OS}} COMPRADOR{{sc_plural}} deverão comunicar {{pronome_v_aos}} VENDEDOR{{sv_plural}} por escrito caso identifique{{sc_plural=='ES'?'m':''}} esses defeitos durante o período de garantia, para que sejam feitos os devidos reparos.
+
+[N].1.3. Exclusões da Garantia: A garantia prevista nesta cláusula não cobrirá defeitos que resultem de mau uso, negligência ou modificações realizadas no imóvel {{pronome_c_dos}} COMPRADOR{{sc_plural}} após a entrega, tampouco danos causados por caso fortuito, força maior ou desastres naturais.`},
+  {id:"garantia_evicao",section:"Garantias",name:"Garantia de Evicção",desc:"Responsabilidade legal pela posse pacífica (CC arts. 447 e ss.)",tag:"protection",required:false,
+   template:`{{pronome_v_OS}} VENDEDOR{{sv_plural}} responde{{sv_plural=='ES'?'m':''}} pela evicção na forma da lei, garantindo {{pronome_c_aos}} COMPRADOR{{sc_plural}} a posse pacífica e o pleno domínio sobre o bem, responsabilizando-se pela existência de ônus, dívidas ou litígios anteriores à celebração deste contrato, nos termos dos arts. 447 e seguintes do Código Civil.`},
+  {id:"mora_padrao",section:"Mora e Inadimplemento",name:"Mora e Inadimplemento — Cláusula Completa",desc:"Multa 2%, juros 1%/mês, IPCA, honorários 10%/20%, rescisão 20%, arts. 389/395/475 CC",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª – DA MORA E DO INADIMPLEMENTO CONTRATUAL E QUEBRA DE CONTRATO
+
+[N].1. O inadimplemento total ou parcial de qualquer obrigação contratual assumida pelas partes ensejará as penalidades previstas nesta cláusula, sem prejuízo das demais medidas legais cabíveis.
+
+[N].2. O atraso no pagamento de qualquer parcela por parte {{pronome_c_dos}} COMPRADOR{{sc_plural}} acarretará as seguintes penalidades, incidentes de forma automática e cumulativa:
+
+a) Multa moratória de 2% (dois por cento) sobre o valor da parcela vencida;
+b) Juros de mora de 1% (um por cento) ao mês, calculados pro rata die;
+c) Correção monetária do valor da parcela vencida pelo índice do IPCA, desde a data do vencimento até o efetivo pagamento.
+
+[N].2.1. Em caso de atraso no pagamento superior a 30 (trinta) dias, sendo necessária a intervenção de advogado para a cobrança do débito, {{pronome_c_OS}} COMPRADOR{{sc_plural}} ficarão obrigados ao pagamento de honorários advocatícios no percentual de 10% (dez por cento) sobre o valor atualizado do débito, quando se tratar de cobrança administrativa, e de 20% (vinte por cento) sobre o valor atualizado do débito, quando a cobrança for realizada por meio de ação judicial, responsabilizando-se inclusive pelo ressarcimento de custas e demais despesas processuais, sem prejuízo das demais penalidades previstas neste instrumento e na legislação aplicável.
+
+[N].3. O inadimplemento definitivo por parte {{pronome_c_dos}} COMPRADOR{{sc_plural}}, caracterizado pelo não pagamento de qualquer parcela pelo prazo superior a 90 (noventa) dias, facultará {{pronome_v_aos}} VENDEDOR{{sv_plural}} considerar este contrato automaticamente rescindido, mediante notificação prévia {{pronome_c_aos}} COMPRADOR{{sc_plural}}, concedendo-lhe prazo de 30 (trinta) dias para, querendo, purgar a mora, sob pena de incorrerem em quebra de contrato, aplicando-se multa compensatória equivalente a 20% (vinte por cento) sobre o valor total do contrato.
+
+[N].4. Caso a rescisão contratual decorra de culpa {{pronome_v_dos}} VENDEDOR{{sv_plural}}, deverá{{sv_plural=='ES'?'ão':''}} restituir integralmente {{pronome_c_aos}} COMPRADOR{{sc_plural}} os valores já pagos, devidamente atualizados pelo IPCA, acrescidos de multa compensatória equivalente a 20% (vinte por cento) sobre o valor total do contrato, sem prejuízo da responsabilidade por eventuais perdas e danos.
+
+[N].5. A parte inocente poderá, a seu exclusivo critério, optar pela rescisão do contrato com aplicação das penalidades previstas nesta cláusula ou pela sua execução forçada, com base no disposto nos artigos 389, 395 e 475 do Código Civil.`},
+  {id:"intermediacao",section:"Intermediação",name:"Intermediação e Corretagem",desc:"Reconhecimento da intermediação, valor e dados bancários",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª – DA INTERMEDIAÇÃO E CORRETAGEM
+
+[N].1. Reconhecem as partes contratantes que a intermediação do negócio jurídico foi realizada por [NOME DA IMOBILIÁRIA], CNPJ/MF sob o n. [CNPJ], CRECI/MT [CRECI].
+
+[N].2. A comissão de corretagem totaliza o valor de R$ [VALOR] ([VALOR POR EXTENSO]), correspondente a [%]% ([PERCENTUAL POR EXTENSO] por cento) do valor global da negociação, que deverá ser paga {{pronome_v_dos}} VENDEDOR{{sv_plural}} à INTERMEDIADORA na data de assinatura deste contrato.
+
+[N].3. O pagamento deverá ser realizado diretamente à INTERMEDIADORA via PIX, conforme dados abaixo:
+• Banco n. [NÚMERO] – [BANCO]
+• Agência: [AGÊNCIA]
+• Conta Corrente: [CONTA]
+• CHAVE PIX/CNPJ: [CHAVE]
+
+[N].4. Em caso de inadimplemento da comissão de corretagem, {{pronome_v_OS}} VENDEDOR{{sv_plural}} incorrerão automaticamente em mora, correndo juros de mora de 1% (um por cento) ao mês pro rata die, além de multa de 2% (dois por cento) sobre o valor em atraso.
+
+[N].5. Em caso de rescisão antecipada do contrato, a parte que der causa à rescisão deverá arcar com a comissão de corretagem integralmente.`},
+  {id:"disp_finais",section:"Disposições Finais",name:"Disposições Finais — Padrão Completo",desc:"Irrevogabilidade, notificação eletrônica, aditivos e foro de Sinop/MT",tag:"optional",required:false,
+   template:`CLÁUSULA [N]ª – DAS DISPOSIÇÕES FINAIS
+
+[N].1. O presente contrato é irrevogável e irretratável, obrigando as partes, seus herdeiros e sucessores.
+
+[N].2. Qualquer notificação necessária entre as partes poderá ser realizada por meio eletrônico (e-mail ou WhatsApp), bastando apenas o envio para início do prazo legal.
+
+[N].3. Qualquer retificação, complementação ou remoção de cláusulas deverá ser realizada formalmente por meio de instrumento de aditivo contratual assinado por ambas as partes contratantes.
+
+[N].4. Para dirimir quaisquer controvérsias oriundas deste contrato, as partes elegem, com exclusão de qualquer outro por mais privilegiado que seja, o foro da Comarca de {{contrato_cidade}}/MT, como o único competente para processar e julgar as ações decorrentes deste instrumento.`},
+  {id:"assinatura_eletronica",section:"Disposições Finais",name:"Encerramento — Assinatura Eletrônica (art. 784 §4º CPC)",desc:"Validade jurídica da assinatura digital — dispensa testemunhas",tag:"optional",required:false,
+   template:`E, por estarem justas e contratadas, as partes firmam o presente instrumento, por meio de assinatura eletrônica digital, com validade jurídica nos termos do art. 784, parágrafo 4º do CPC, que dispensam a necessidade de reconhecimento de firma e de assinatura presencial ou de testemunhas para sua validade e eficácia.`},
+  {id:"assinatura_fisica",section:"Disposições Finais",name:"Encerramento — Assinatura Física com Testemunhas",desc:"Assinatura presencial em vias com duas testemunhas",tag:"optional",required:false,
+   template:`E, por estarem justas e contratadas, as partes firmam o presente instrumento, em [N] ([N POR EXTENSO]) vias de igual teor, na presença de duas testemunhas para que surtam todos os efeitos legais.
+
+TESTEMUNHAS:
+
+1. ___________________________________ CPF: ___________________
+
+2. ___________________________________ CPF: ___________________`},
+];
+
+let selected=new Set(["qualificacao","objeto_imovel","preco_basico","tributos_padrao","mora_padrao","disp_finais","assinatura_eletronica"]);
+let openSecs=new Set([0,1,2]);
+let vendedores=[newPessoa()], compradores=[newPessoa()];
+let genV="M", genC="M", editingId=null, customVars=[];
+
+function newPessoa(){return{id:Math.random().toString(36).slice(2),nome:"",nacionalidade:"brasileiro(a)",civil:"",prof:"",rg:"",doc:"",logradouro:"",numero:"",bairro:"",cidade:"",cep:"",email:"",cel:"",genero:"M"};}
+
+function getPron(gen,plural){const f=gen==="F";if(plural)return{OS:f?"as":"os",dos:f?"das":"dos",aos:f?"às":"aos",estes:f?"estas":"estes",sufixo:f?"AS":"ES"};return{OS:f?"a":"o",dos:f?"da":"do",aos:f?"à":"ao",estes:f?"esta":"este",sufixo:f?"A":""};}
+function setGenGrupo(r,g){if(r==="v"){genV=g;document.getElementById("vG-M").className="gen-btn"+(g==="M"?" on":"");document.getElementById("vG-F").className="gen-btn"+(g==="F"?" on":"");}else{genC=g;document.getElementById("cG-M").className="gen-btn"+(g==="M"?" on":"");document.getElementById("cG-F").className="gen-btn"+(g==="F"?" on":"");}updatePreviewLabel(r);updatePreview();}
+function updatePreviewLabel(r){const g=r==="v"?genV:genC,p=(r==="v"?vendedores:compradores).length>1,pr=getPron(g,p),n=r==="v"?"VENDEDOR":"COMPRADOR";document.getElementById(r+"-preview").innerHTML=`Tratamento: <strong>${pr.OS} <b>${n}${pr.sufixo}</b> · ${pr.dos} <b>${n}${pr.sufixo}</b> · ${pr.aos} <b>${n}${pr.sufixo}</b></strong>`;}
+
+function buildBloco(lista,role){
+  const vPron=role==="VENDEDOR"?getPron(genV,lista.length>1):getPron(genC,lista.length>1);
+  if(lista.length===1){
+    const p=lista[0],f=p.genero==="F",suf=f?"A":"",port=f?"portadora":"portador",insc=f?"inscrita":"inscrito",res=f?"residente e domiciliada":"residente e domiciliado";
+    const qualif=[];
+    if(p.nacionalidade)qualif.push(p.nacionalidade);if(p.civil)qualif.push(p.civil);if(p.prof)qualif.push(p.prof);
+    if(p.rg)qualif.push(`${port}(a) da CI/RG sob o n. ${p.rg}`);if(p.doc)qualif.push(`${insc}(a) no CPF/MF sob o n. ${p.doc}`);
+    if(p.email)qualif.push(`e-mail ${p.email}`);if(p.cel)qualif.push(`celular/WhatsApp ${p.cel}`);
+    const ep=[];if(p.logradouro)ep.push(p.logradouro);if(p.numero)ep.push(`n. ${p.numero}`);if(p.bairro)ep.push(p.bairro);if(p.cep)ep.push(`CEP ${p.cep}`);if(p.cidade)ep.push(p.cidade);
+    if(ep.length)qualif.push(`${res}(a) ${ep.join(", ")}`);
+    return`${role}${suf}:\n${p.nome||"[NOME]"}, ${qualif.join(", ")}.`;
+  }
+  const linhas=lista.map((p,i)=>{
+    const f=p.genero==="F",port=f?"portadora":"portador",insc=f?"inscrita":"inscrito";
+    const q=[];if(p.nacionalidade)q.push(p.nacionalidade);if(p.civil)q.push(p.civil);if(p.prof)q.push(p.prof);
+    if(p.rg)q.push(`${port}(a) da CI/RG sob o n. ${p.rg}`);if(p.doc)q.push(`${insc}(a) no CPF/MF sob o n. ${p.doc}`);
+    if(p.email)q.push(`e-mail ${p.email}`);if(p.cel)q.push(`celular/WhatsApp ${p.cel}`);
+    return`${p.nome||"[NOME]"}, ${q.join(", ")}`;
+  });
+  const ul=lista[lista.length-1],ep=[];if(ul.logradouro)ep.push(ul.logradouro);if(ul.numero)ep.push(`n. ${ul.numero}`);if(ul.bairro)ep.push(ul.bairro);if(ul.cep)ep.push(`CEP ${ul.cep}`);if(ul.cidade)ep.push(ul.cidade);
+  const resPl=vPron.sufixo==="AS"?"residentes e domiciliadas":"residentes e domiciliados";
+  const joined=linhas.slice(0,-1).join(", ")+(linhas.length>1?" e ":"")+linhas[linhas.length-1];
+  return`${role}${vPron.sufixo}:\n${joined}${ep.length?`, ${resPl} ${ep.join(", ")}`:""}.`;
+}
+
+function buildMap(form,vP,cP,vL,cL){
+  const m={...form,bloco_vendedores:buildBloco(vL,"VENDEDOR"),bloco_compradores:buildBloco(cL,"COMPRADOR"),sv_plural:vP.sufixo,sc_plural:cP.sufixo,pronome_v_OS:vP.OS,pronome_v_dos:vP.dos,pronome_v_aos:vP.aos,pronome_v_estes:vP.estes,pronome_c_OS:cP.OS,pronome_c_dos:cP.dos,pronome_c_aos:cP.aos,pronome_c_estes:cP.estes};
+  vL.forEach((p,i)=>{m[`vendedor_${i+1}_email`]=p.email||"";m[`vendedor_${i+1}_cel`]=p.cel||"";m[`vendedor_${i+1}_nome`]=p.nome||"";m[`vendedor_${i+1}_doc`]=p.doc||"";});
+  cL.forEach((p,i)=>{m[`comprador_${i+1}_email`]=p.email||"";m[`comprador_${i+1}_cel`]=p.cel||"";m[`comprador_${i+1}_nome`]=p.nome||"";m[`comprador_${i+1}_doc`]=p.doc||"";});
+  customVars.forEach(v=>{m[v.nome]=v.valor;});return m;
+}
+function renderTpl(tpl,form,vP,cP,vL,cL){
+  const m=buildMap(form,vP,cP,vL,cL);
+  let result=tpl.replace(/\{\{(\w+)\}\}/g,(_,k)=>m[k]!==undefined?m[k]:`[${k.toUpperCase()}]`);
+  return result;
+}
+// Aplica negrito em VENDEDOR/COMPRADOR e variações para HTML (preview)
+function applyBoldHTML(txt){
+  return txt.replace(/\b(VENDEDOR(?:ES|A|AS)?|COMPRADOR(?:ES|A|AS)?|VENDEDORA(?:S)?|COMPRADORA(?:S)?|INTERMEDIADORA(?:S)?)/g,'<strong>$1</strong>');
+}
+// Retorna runs Word para uma linha, aplicando negrito em VENDEDOR/COMPRADOR
+function mkPWithBold(txt,opts,mkP,esc){
+  const align=opts.center?"center":(opts.justify?"both":"left");
+  const sb=opts.spaceBefore||0,sa=opts.spaceAfter||180,sz=opts.size||22;
+  const color=opts.color?`<w:color w:val="${opts.color}"/>`:"";
+  const italic=opts.italic?"<w:i/>":"";
+  const font=`<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>`;
+  const baseRPr=`${italic}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>${color}${font}`;
+  // Split on VENDEDOR/COMPRADOR pattern
+  const parts=txt.split(/(VENDEDOR(?:ES|A|AS)?|COMPRADOR(?:ES|A|AS)?|VENDEDORA(?:S)?|COMPRADORA(?:S)?|INTERMEDIADORA(?:S)?)/g);
+  if(parts.length===1) return mkP(txt,opts);
+  let runs="";
+  parts.forEach(p=>{
+    if(!p)return;
+    const isKw=/^(VENDEDOR(?:ES|A|AS)?|COMPRADOR(?:ES|A|AS)?|VENDEDORA(?:S)?|COMPRADORA(?:S)?|INTERMEDIADORA(?:S)?)$/.test(p);
+    const rPr=isKw?`<w:rPr><w:b/>${baseRPr}</w:rPr>`:`<w:rPr>${opts.bold?"<w:b/>":""}${baseRPr}</w:rPr>`;
+    runs+=`<w:r>${rPr}<w:t xml:space="preserve">${esc(p)}</w:t></w:r>`;
+  });
+  return`<w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:before="${sb}" w:after="${sa}"/></w:pPr>${runs}</w:p>`;
+}
+function fmtDate(s){if(!s)return"[DATA]";const[y,m,d]=s.split("-");return`${+d} de ${["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"][+m-1]} de ${y}`;}
+function getForm(){const f={};["tipo_contrato","objeto_natureza","objeto_area_const","objeto_area_tot","objeto_logradouro","objeto_numero","objeto_quadra","objeto_bairro","objeto_cidade","objeto_cep","objeto_matricula","objeto_valor","objeto_valor_ext","contrato_cidade","contrato_data"].forEach(id=>{const el=document.getElementById(id);if(el)f[id]=el.value;});f.contrato_data_fmt=fmtDate(f.contrato_data);return f;}
+
+function addVar(){const n=prompt("Nome da variável (sem espaços, ex: numero_matricula):");if(!n)return;const nc=n.trim().replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g,"");if(!nc)return;customVars.push({id:Math.random().toString(36).slice(2),nome:nc,valor:""});renderVars();renderHints();updatePreview();}
+function removeVar(id){customVars=customVars.filter(v=>v.id!==id);renderVars();renderHints();updatePreview();}
+function setVarVal(id,val){const v=customVars.find(x=>x.id===id);if(v)v.valor=val;updatePreview();}
+function renderVars(){const el=document.getElementById("vars-list");if(!customVars.length){el.innerHTML='<div style="font-size:12px;color:#3a6a9a;font-style:italic;font-family:Arial,sans-serif">Nenhuma variável. Clique em "+ Nova variável" para adicionar.</div>';return;}el.innerHTML=customVars.map(v=>`<div class="var-row"><span class="var-chip">{{${v.nome}}}</span><input value="${esc2(v.valor)}" placeholder="Valor" oninput="setVarVal('${v.id}',this.value)" style="flex:1;padding:5px 8px;border-radius:6px;border:1.5px solid #90c0d8;background:white;font-size:12px;outline:none;font-family:Arial,sans-serif"/><button class="del-var-btn" onclick="removeVar('${v.id}')">✕</button></div>`).join("");}
+
+function renderSidebar(){const cont=document.getElementById("sidebar-content");cont.innerHTML="";SECTIONS.forEach((sec,si)=>{const sc=clauses.filter(c=>c.section===sec);if(!sc.length)return;const cnt=sc.filter(c=>selected.has(c.id)).length,open=openSecs.has(si);let html=`<div class="sec-header" onclick="toggleSec(${si})"><span style="font-size:16px">${ICONS[sec]}</span><span class="sec-title">${sec}</span>${cnt>0?`<span class="sec-badge">${cnt}</span>`:""}<span id="arrow-${si}" style="font-size:10px;color:#7a3500;transition:transform 0.2s;transform:${open?"rotate(180deg)":"none"}">▼</span></div><div class="clause-list ${open?"open":""}" id="sec-${si}">`;sc.forEach(c=>{const sel=selected.has(c.id),t=TAG[c.tag]||TAG.optional;html+=`<div class="clause-item ${sel?"selected":""} ${c.required?"req":""}" onclick="${c.required?"":"toggleClause('"+c.id+"')"}"><div class="clause-check">${sel?"✓":""}</div><div style="flex:1"><div class="clause-name">${c.name}</div><div class="clause-desc">${c.desc}</div></div><div class="clause-tag" style="background:${t.bg};color:${t.color}">${t.lbl}</div></div>`;});html+=`</div>`;cont.insertAdjacentHTML("beforeend",html);});}
+function toggleSec(i){openSecs.has(i)?openSecs.delete(i):openSecs.add(i);document.getElementById("sec-"+i).className="clause-list "+(openSecs.has(i)?"open":"");document.getElementById("arrow-"+i).style.transform=openSecs.has(i)?"rotate(180deg)":"none";}
+function toggleClause(id){selected.has(id)?selected.delete(id):selected.add(id);renderSidebar();updatePreview();}
+
+function renderPessoas(){renderLista("v");renderLista("c");document.getElementById("v-count").textContent=`(${vendedores.length} ${vendedores.length===1?"pessoa":"pessoas"})`;document.getElementById("c-count").textContent=`(${compradores.length} ${compradores.length===1?"pessoa":"pessoas"})`;updatePreviewLabel("v");updatePreviewLabel("c");}
+function renderLista(role){const lista=role==="v"?vendedores:compradores,color=role==="v"?"#c9922a":"#3d5a2a",cont=document.getElementById((role==="v"?"vendedores":"compradores")+"-list");cont.innerHTML="";lista.forEach((p,i)=>{const f=p.genero==="F",rL=(role==="v"?"Vendedor":"Comprador")+(f?"a":"")+" "+(i+1);cont.insertAdjacentHTML("beforeend",`<div class="pessoa-card"><div class="pessoa-head" onclick="togglePessoa('${p.id}')"><div class="pessoa-num" style="background:${color}">${i+1}</div><span style="flex:1;font-size:13px;font-weight:700;color:#1a0800;font-family:Arial,sans-serif">${p.nome||rL}</span><span style="font-size:11px;background:${f?"#fde8f5":"#e8f0fd"};color:${f?"#7a1a5a":"#1a3a7a"};padding:2px 8px;border-radius:20px;font-weight:700;font-family:Arial,sans-serif">${f?"👩 Fem.":"👨 Masc."}</span>${lista.length>1?`<button onclick="event.stopPropagation();removePessoa('${role}',${i})" style="background:#fde8e8;border:none;border-radius:6px;color:#7a1a1a;cursor:pointer;padding:3px 8px;font-size:12px">✕</button>`:""}<span style="font-size:11px;color:#7a3500;margin-left:4px">▼</span></div><div class="pessoa-body" id="pb-${p.id}"><div style="margin-bottom:10px"><label>Gênero</label><div style="display:flex;gap:6px"><button class="gen-btn ${p.genero==="M"?"on":""}" onclick="setPessoaGen('${role}',${i},'M')">👨 Masculino</button><button class="gen-btn ${p.genero==="F"?"on":""}" onclick="setPessoaGen('${role}',${i},'F')">👩 Feminino</button></div></div><div class="grid2"><div class="full"><label>Nome / Razão Social</label><input value="${esc2(p.nome)}" oninput="setPessoaVal('${role}',${i},'nome',this.value)" placeholder="${rL}"/></div><div><label>Nacionalidade</label><input value="${esc2(p.nacionalidade)}" oninput="setPessoaVal('${role}',${i},'nacionalidade',this.value)" placeholder="Ex: brasileiro(a)"/></div><div><label>Estado Civil</label><select onchange="setPessoaVal('${role}',${i},'civil',this.value)"><option value="">Selecionar...</option>${["solteiro(a)","casado(a)","divorciado(a)","viúvo(a)","em união estável"].map(o=>`<option ${p.civil===o?"selected":""}>${o}</option>`).join("")}</select></div><div><label>Profissão</label><input value="${esc2(p.prof)}" oninput="setPessoaVal('${role}',${i},'prof',this.value)" placeholder="Ex: empresário(a)"/></div><div><label>CI/RG</label><input value="${esc2(p.rg)}" oninput="setPessoaVal('${role}',${i},'rg',this.value)" placeholder="Ex: 7406954 PC/PA"/></div><div><label>CPF/MF ou CNPJ/MF</label><input value="${esc2(p.doc)}" oninput="setPessoaVal('${role}',${i},'doc',this.value)" placeholder="000.000.000-00"/></div><div class="full"><label>Logradouro</label><input value="${esc2(p.logradouro)}" oninput="setPessoaVal('${role}',${i},'logradouro',this.value)" placeholder="Ex: Travessa Paulo Freire"/></div><div><label>Número</label><input value="${esc2(p.numero)}" oninput="setPessoaVal('${role}',${i},'numero',this.value)" placeholder="Ex: 100"/></div><div><label>Bairro</label><input value="${esc2(p.bairro)}" oninput="setPessoaVal('${role}',${i},'bairro',this.value)" placeholder="Ex: Aquarela das Artes"/></div><div><label>Cidade / UF</label><input value="${esc2(p.cidade)}" oninput="setPessoaVal('${role}',${i},'cidade',this.value)" placeholder="Ex: Sinop/MT"/></div><div><label>CEP</label><input value="${esc2(p.cep)}" oninput="setPessoaVal('${role}',${i},'cep',this.value)" placeholder="Ex: 78.555-467"/></div><div><label>📧 E-mail</label><input type="email" value="${esc2(p.email)}" oninput="setPessoaVal('${role}',${i},'email',this.value)" placeholder="nome@email.com"/></div><div><label>📱 Celular/WhatsApp</label><input type="tel" value="${esc2(p.cel)}" oninput="setPessoaVal('${role}',${i},'cel',this.value)" placeholder="(66) 99922-0610"/></div></div></div></div>`);});}
+function togglePessoa(id){const el=document.getElementById("pb-"+id);el.style.display=el.style.display==="none"?"":"";}
+function addPessoa(r){if(r==="v")vendedores.push(newPessoa());else compradores.push(newPessoa());renderPessoas();updatePreview();}
+function removePessoa(r,i){if(r==="v")vendedores.splice(i,1);else compradores.splice(i,1);renderPessoas();updatePreview();}
+function setPessoaGen(r,i,g){if(r==="v")vendedores[i].genero=g;else compradores[i].genero=g;renderPessoas();updatePreview();}
+function setPessoaVal(r,i,k,v){if(r==="v")vendedores[i][k]=v;else compradores[i][k]=v;updatePreview();}
+
+
+// Numeração automática de cláusulas
+// Converte ordinais em texto: 1->1ª, 2->2ª ...
+const ORD = ["","1ª","2ª","3ª","4ª","5ª","6ª","7ª","8ª","9ª","10ª","11ª","12ª","13ª","14ª","15ª","16ª","17ª","18ª","19ª","20ª"];
+function numOrd(n){ return ORD[n]||n+"ª"; }
+// Aplica numeração sequencial em um texto de cláusula.
+// Cada chamada usa um contador externo (via getN callback) para o número principal.
+// Subnúmeros como [N].1, [N].2 são substituídos pelo número principal correto.
+// Títulos fixos como "CLÁUSULA 1ª" ou "CLÁUSULA 2ª" também são renumerados.
+function applyClauseNumbers(txt, getN){
+  // Detecta se o texto abre uma nova cláusula (tem "CLÁUSULA" na primeira linha)
+  const firstLine = txt.split("\n")[0].toUpperCase();
+  const isMainClause = firstLine.includes("CLÁUSULA");
+  const n = isMainClause ? getN() : null;
+  if(n !== null){
+    // Substitui "CLÁUSULA Xª" (hardcoded) pelo número correto
+    txt = txt.replace(/CLÁUSULA\s+\d+ª/g, "CLÁUSULA "+numOrd(n));
+    // Substitui "CLÁUSULA [N]ª" pelo número correto
+    txt = txt.replace(/CLÁUSULA\s+\[N\]ª/g, "CLÁUSULA "+numOrd(n));
+    // Substitui subnúmeros [N].x pelo número correto
+    txt = txt.replace(/\[N\]\./g, n+".");
+  } else {
+    // Sem cláusula principal: apenas remove [N] avulso se houver
+    txt = txt.replace(/\[N\]\./g, "");
+  }
+  return txt;
+}
+
+function updatePreview(){
+  const vP=getPron(genV,vendedores.length>1),cP=getPron(genC,compradores.length>1),form=getForm();
+  const active=SECTIONS.flatMap(s=>clauses.filter(c=>c.section===s&&selected.has(c.id)));
+  document.getElementById("clause-badge").textContent=`${active.length} cláusula${active.length!==1?"s":""}`;
+  document.getElementById("partes-badge").textContent=`${vendedores.length}V · ${compradores.length}C`;
+  const body=document.getElementById("preview-body");
+  if(!active.length){body.innerHTML='<div class="preview-empty"><div style="font-size:40px;margin-bottom:10px">🤠</div><p style="font-size:13px;font-family:Arial,sans-serif">Selecione cláusulas no painel à esquerda,<br>parceiro!</p></div>';return;}
+  const tipo=form.tipo_contrato||"COMPRA E VENDA DE IMÓVEL URBANO";
+  let html=`<div style="text-align:center;font-weight:700;font-size:14px;margin-bottom:4px;line-height:1.5;color:#1a0800;font-family:Arial,sans-serif">CONTRATO PARTICULAR DE<br>${tipo}</div><div style="text-align:center;font-size:12px;font-style:italic;color:#7a5030;margin-bottom:16px;font-family:Arial,sans-serif">Pelo presente instrumento particular de contrato de compra e venda, que entre si fazem:</div>`;
+  let clauseNum=0;
+  active.forEach(c=>{
+    let txt=renderTpl(c.template,form,vP,cP,vendedores,compradores);
+    txt=applyClauseNumbers(txt,()=>++clauseNum);
+    const htmlTxt=applyBoldHTML(txt);
+    html+=`<div class="preview-clause"><div class="preview-clause-title">${c.name}</div><div class="preview-clause-text">${htmlTxt}</div></div>`;
+  });
+  html+=`<div style="margin-top:16px;text-align:right;font-size:12px;font-style:italic;color:#7a5030;font-family:Arial,sans-serif">${form.contrato_cidade||"[Cidade]"}/MT, ${form.contrato_data_fmt||"[DATA]"}.</div>`;
+  body.innerHTML=html;
+}
+
+async function gerarDocx(){
+  const btn=document.getElementById("gerar-btn"),msgEl=document.getElementById("msg");
+  msgEl.className="hidden";
+  if(!vendedores[0]?.nome||!compradores[0]?.nome){showMsg("err","⚠️ Preencha o nome de ao menos um Vendedor e um Comprador.");return;}
+  btn.disabled=true;btn.textContent="⏳ O Severino está preparando...";
+  try{
+    const vP=getPron(genV,vendedores.length>1),cP=getPron(genC,compradores.length>1),form=getForm();
+    const active=SECTIONS.flatMap(s=>clauses.filter(c=>c.section===s&&selected.has(c.id)));
+    const tipo=form.tipo_contrato||"COMPRA E VENDA DE IMÓVEL URBANO";
+    function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+    function mkP(txt,opts={}){
+      const align=opts.center?"center":(opts.justify?"both":"left");
+      const sb=opts.spaceBefore||0,sa=opts.spaceAfter||180;
+      const sz=opts.size||22;
+      let rPr=`<w:rPr>`;
+      if(opts.bold)rPr+=`<w:b/>`;if(opts.italic)rPr+=`<w:i/>`;
+      rPr+=`<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
+      if(opts.color)rPr+=`<w:color w:val="${opts.color}"/>`;
+      rPr+=`<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr>`;
+      return`<w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:before="${sb}" w:after="${sa}"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${esc(txt||"")}</w:t></w:r></w:p>`;
+    }
+    let bodyXml="";
+    bodyXml+=mkP("CONTRATO PARTICULAR DE",{center:true,bold:true,size:26,spaceAfter:40});
+    bodyXml+=mkP(tipo,{center:true,bold:true,size:26,spaceAfter:240});
+    bodyXml+=mkP("Pelo presente instrumento particular de contrato de compra e venda, que entre si fazem:",{italic:true,size:22,spaceAfter:240,justify:true});
+    let docClauseNum=0;
+    active.forEach(c=>{
+      let txt=renderTpl(c.template,form,vP,cP,vendedores,compradores);
+      txt=applyClauseNumbers(txt,()=>++docClauseNum);
+      const lines=txt.split("\n");
+      lines.forEach((l,li)=>{
+        const isCTitle=l.toUpperCase().startsWith("CLÁUSULA");
+        const opts={size:22,justify:!isCTitle,center:false,bold:isCTitle,spaceAfter:isCTitle?80:160,spaceBefore:isCTitle&&li>0?200:0};
+        bodyXml+=mkPWithBold(l,opts,mkP,esc);
+      });
+      bodyXml+=mkP("",{spaceAfter:80});
+    });
+    bodyXml+=mkP("",{spaceBefore:400,spaceAfter:80});
+    bodyXml+=mkP(`${form.contrato_cidade||"Sinop"}/MT, ${form.contrato_data_fmt||"[DATA]"}.`,{size:22,spaceAfter:560});
+    [...vendedores.map((p,i)=>({nome:p.nome||"VENDEDOR(A)",doc:p.doc,role:`VENDEDOR${vP.sufixo}${vendedores.length>1?" "+(i+1):""}`})),...compradores.map((p,i)=>({nome:p.nome||"COMPRADOR(A)",doc:p.doc,role:`COMPRADOR${cP.sufixo}${compradores.length>1?" "+(i+1):""}`}))].forEach(s=>{
+      bodyXml+=mkP("________________________________________________",{center:true,size:22,spaceAfter:40});
+      bodyXml+=mkP(s.nome,{center:true,bold:true,size:22,spaceAfter:20});
+      if(s.doc)bodyXml+=mkP(`CPF/CNPJ ${s.doc}`,{center:true,size:20,spaceAfter:20,color:"666666"});
+      bodyXml+=mkP(s.role,{center:true,italic:true,size:20,spaceAfter:400,color:"666666"});
+    });
+    const docXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${bodyXml}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1843" w:right="1701" w:bottom="1200" w:left="1701"/></w:sectPr></w:body></w:document>`;
+    const relsXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+    const stylesXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="pt-BR"/></w:rPr></w:rPrDefault></w:docDefaults></w:styles>`;
+    const appRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+    const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+    const files={"[Content_Types].xml":ct,"_rels/.rels":appRels,"word/document.xml":docXml,"word/styles.xml":stylesXml,"word/_rels/document.xml.rels":relsXml};
+    const zip=await buildZip(files);
+    const blob=new Blob([zip],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=`Contrato_${(vendedores[0]?.nome||"Contrato").replace(/\s+/g,"_")}.docx`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    showMsg("ok","✅ Severino entregou o contrato! Baixado com sucesso.");
+  }catch(e){console.error(e);showMsg("err","❌ Erro: "+e.message);}
+  btn.disabled=false;btn.textContent="⬇️ Gerar e Baixar Contrato (.docx)";
+}
+
+async function buildZip(files){
+  const enc=new TextEncoder(),crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c;}return t;})();
+  function crc32(d){let c=-1;for(let i=0;i<d.length;i++)c=(c>>>8)^crcT[(c^d[i])&0xFF];return(c^-1)>>>0;}
+  function u16(n){const b=new Uint8Array(2);new DataView(b.buffer).setUint16(0,n,true);return b;}
+  function u32(n){const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n,true);return b;}
+  const now=new Date(),dd=((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate(),dt=(now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1);
+  const lH=[],cH=[];let off=0;
+  for(const[name,content]of Object.entries(files)){const nb=enc.encode(name),db=enc.encode(content),cr=crc32(db);const lc=new Uint8Array([0x50,0x4B,0x03,0x04,20,0,0,0,0,0,...u16(dt),...u16(dd),...u32(cr),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0),...nb]);lH.push({lc,db,nb,cr,sz:db.length,off,dt,dd});off+=lc.length+db.length;}
+  let cs=0,co=off;for(const e of lH){const cd=new Uint8Array([0x50,0x4B,0x01,0x02,20,0,20,0,0,0,0,0,...u16(e.dt),...u16(e.dd),...u32(e.cr),...u32(e.sz),...u32(e.sz),...u16(e.nb.length),...u16(0),...u16(0),0,0,0,0,0,0,0,0,...u32(e.off),...e.nb]);cH.push(cd);cs+=cd.length;}
+  const eo=new Uint8Array([0x50,0x4B,0x05,0x06,0,0,0,0,...u16(lH.length),...u16(lH.length),...u32(cs),...u32(co),0,0]);
+  const tot=off+cs+eo.length,out=new Uint8Array(tot);let p=0;for(const e of lH){out.set(e.lc,p);p+=e.lc.length;out.set(e.db,p);p+=e.db.length;}for(const c of cH){out.set(c,p);p+=c.length;}out.set(eo,p);return out;
+}
+
+function renderBanco(){
+  const q=document.getElementById("search").value.toLowerCase();
+  document.getElementById("banco-count").textContent=`${clauses.length} cláusulas · edite, exclua ou adicione novas`;
+  let html="";
+  SECTIONS.forEach(sec=>{
+    const sc=clauses.filter(c=>c.section===sec&&(!q||[c.name,c.section,c.desc].some(x=>x.toLowerCase().includes(q))));
+    if(!sc.length)return;
+    html+=`<div style="margin-bottom:22px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:18px">${ICONS[sec]}</span><span style="font-size:15px;font-weight:700;color:#1a0800;font-family:Arial,sans-serif">${sec}</span><span style="font-size:11px;color:#7a5030;background:#fdf0d8;padding:2px 8px;border-radius:20px;font-family:Arial,sans-serif">${sc.length}</span></div>`;
+    sc.forEach(c=>{
+      const ts=TAG[c.tag]||TAG.optional,isEd=editingId===c.id;
+      html+=`<div class="clause-card ${isEd?"editing":""}">
+        <div class="clause-card-head">
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:13px;font-weight:700;color:#1a0800;font-family:Arial,sans-serif">${c.name}</span><span style="font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;background:${ts.bg};color:${ts.color};font-family:Arial,sans-serif">${ts.lbl}</span>${c.required?'<span style="font-size:10px;color:#7a5030;font-family:Arial,sans-serif">⚠️ Obrigatória</span>':""}</div><div style="font-size:12px;color:#7a5030;margin-top:2px;font-family:Arial,sans-serif">${c.desc}</div></div>
+          <div style="display:flex;gap:6px">
+            <button onclick="toggleEdit('${c.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${isEd?"#c9922a":"#d4b080"};background:${isEd?"#c9922a":"white"};color:${isEd?"white":"#7a3500"};font-size:12px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">${isEd?"✕ Fechar":"✏️ Editar"}</button>
+            ${!c.required?`<button onclick="delClause('${c.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid #fca5a5;background:white;color:#7a1a1a;font-size:12px;cursor:pointer;font-family:Arial,sans-serif">🗑️</button>`:""}
+          </div>
+        </div>
+        ${!isEd?`<div style="padding:8px 16px 10px;font-size:11px;color:#7a5030;border-top:1px solid #f0e0c0;font-family:monospace;background:#fdfaf5;border-radius:0 0 8px 8px">${(c.template||"").slice(0,160)}${c.template&&c.template.length>160?"...":""}</div>`:""}
+        ${isEd?`<div class="clause-card-edit"><div class="grid2" style="gap:12px;margin-bottom:12px"><div><label>Nome</label><input id="ed-name" value="${esc2(c.name)}" oninput="updateEditPreview()"/></div><div><label>Seção</label><select id="ed-section">${SECTIONS.map(s=>`<option ${c.section===s?"selected":""}>${s}</option>`).join("")}</select></div><div><label>Descrição</label><input id="ed-desc" value="${esc2(c.desc)}"/></div><div><label>Tipo</label><select id="ed-tag"><option value="optional" ${c.tag==="optional"?"selected":""}>Opcional</option><option value="protection" ${c.tag==="protection"?"selected":""}>Proteção</option><option value="required" ${c.tag==="required"?"selected":""}>Obrigatória</option></select></div><div class="full"><label>Template</label><textarea id="ed-template" rows="9" oninput="updateEditPreview()" style="font-family:monospace;font-size:12px">${esc2(c.template)}</textarea></div></div><div class="preview-tpl"><div style="font-size:10px;font-weight:700;color:#7a3500;margin-bottom:4px;font-family:Arial,sans-serif">👁️ Pré-visualização com dados de exemplo:</div><span id="ed-preview-txt" style="white-space:pre-line;font-size:12px"></span></div><div style="display:flex;gap:8px;margin-top:10px"><button onclick="saveEdit('${c.id}')" style="padding:9px 20px;background:linear-gradient(135deg,#7a3500,#c9922a);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif">💾 Salvar</button><button onclick="toggleEdit('${c.id}')" style="padding:9px 20px;background:white;border:1.5px solid #d4b080;color:#7a5030;border-radius:8px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif">Cancelar</button></div></div>`:""}
+      </div>`;
+    });
+    html+="</div>";
+  });
+  document.getElementById("banco-content").innerHTML=html;
+  if(editingId)setTimeout(updateEditPreview,10);
+}
+
+function esc2(s){return(s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function toggleEdit(id){editingId=editingId===id?null:id;renderBanco();}
+function saveEdit(id){const idx=clauses.findIndex(c=>c.id===id);if(idx<0)return;clauses[idx]={...clauses[idx],name:document.getElementById("ed-name").value,section:document.getElementById("ed-section").value,desc:document.getElementById("ed-desc").value,tag:document.getElementById("ed-tag").value,template:document.getElementById("ed-template").value};editingId=null;renderBanco();renderSidebar();}
+function delClause(id){if(!confirm("Excluir esta cláusula permanentemente?"))return;clauses=clauses.filter(c=>c.id!==id);selected.delete(id);renderBanco();renderSidebar();updatePreview();}
+function updateEditPreview(){
+  const tpl=document.getElementById("ed-template")?.value||"";
+  const exV=[{genero:"M",nome:"JONES JUNIOR LUNARDI",nacionalidade:"brasileiro",civil:"solteiro(a)",prof:"empresário",rg:"7406954 PC/PA",doc:"048.539.161-99",logradouro:"Travessa Paulo Freire",numero:"100",bairro:"Aquarela das Artes",cidade:"Sinop/MT",cep:"78.555-467",email:"lunardi.imoveis@outlook.com",cel:"(66) 99922-0610"}];
+  const exC=[{genero:"F",nome:"NATALIA CHAVES DO NASCIMENTO",nacionalidade:"brasileira",civil:"solteira",prof:"fisioterapeuta",rg:"27391647 SESP/MT",doc:"060.549.091-00",logradouro:"Rua Benedito Américo",numero:"390",bairro:"Jardim Itália",cidade:"Sinop/MT",cep:"78.555-321",email:"natalia@gmail.com",cel:"(66) 99912-6526"}];
+  const exF={tipo_contrato:"COMPROMISSO DE COMPRA E VENDA DE IMÓVEL URBANO",objeto_natureza:"residencial",objeto_area_const:"109",objeto_area_tot:"300",objeto_logradouro:"Rua JB nº 15",objeto_numero:"683",objeto_quadra:"QD 46 LT 18",objeto_bairro:"Jardim Bougainville",objeto_cidade:"Sinop/MT",objeto_cep:"78.555-881",objeto_matricula:"56.759",objeto_valor:"521.000,00",objeto_valor_ext:"quinhentos e vinte e um mil reais",contrato_cidade:"Sinop",contrato_data:"2025-09-15",contrato_data_fmt:"15 de setembro de 2025"};
+  const el=document.getElementById("ed-preview-txt");
+  if(el)el.textContent=renderTpl(tpl,exF,getPron("M",false),getPron("F",false),exV,exC);
+}
+
+function showModal(){document.getElementById("modal").className="modal-bg";}
+function hideModal(){document.getElementById("modal").className="modal-bg hidden";["new-name","new-desc","new-template"].forEach(id=>document.getElementById(id).value="");document.getElementById("modal-preview").innerHTML="";}
+function renderModalPreview(){
+  const tpl=document.getElementById("new-template").value;if(!tpl){document.getElementById("modal-preview").innerHTML="";return;}
+  const exV=[{genero:"M",nome:"JONES JUNIOR LUNARDI",nacionalidade:"brasileiro",civil:"solteiro(a)",prof:"empresário",rg:"7406954",doc:"048.539.161-99",logradouro:"Travessa Paulo Freire",numero:"100",bairro:"Aquarela das Artes",cidade:"Sinop/MT",cep:"78.555-467",email:"lunardi.imoveis@outlook.com",cel:"(66) 99922-0610"}];
+  const exC=[{genero:"F",nome:"NATALIA CHAVES",nacionalidade:"brasileira",civil:"solteira",prof:"fisioterapeuta",rg:"27391647",doc:"060.549.091-00",logradouro:"Rua Benedito Américo",numero:"390",bairro:"Jardim Itália",cidade:"Sinop/MT",cep:"78.555-321",email:"natalia@gmail.com",cel:"(66) 99912-6526"}];
+  const exF={objeto_tipo:"Imóvel",objeto_valor:"521.000,00",objeto_valor_ext:"quinhentos e vinte e um mil reais",objeto_natureza:"residencial",objeto_area_const:"109",objeto_area_tot:"300",objeto_logradouro:"Rua JB 15",objeto_numero:"683",objeto_quadra:"QD 46 LT 18",objeto_bairro:"Jardim Bougainville",objeto_cidade:"Sinop/MT",objeto_cep:"78.555-881",objeto_matricula:"56.759",contrato_cidade:"Sinop",contrato_data_fmt:"15 de setembro de 2025",tipo_contrato:"COMPRA E VENDA"};
+  document.getElementById("modal-preview").innerHTML=`<div class="preview-tpl"><div style="font-size:10px;font-weight:700;color:#7a3500;margin-bottom:4px;font-family:Arial,sans-serif">👁️ Pré-visualização:</div><span style="white-space:pre-line;font-size:12px">${renderTpl(tpl,exF,getPron("M",false),getPron("F",false),exV,exC)}</span></div>`;
+}
+function addClause(){const name=document.getElementById("new-name").value.trim(),template=document.getElementById("new-template").value.trim();if(!name||!template){alert("Preencha o nome e o texto da cláusula.");return;}clauses.push({id:"c_"+Math.random().toString(36).slice(2,8),name,section:document.getElementById("new-section").value,desc:document.getElementById("new-desc").value,tag:document.getElementById("new-tag").value,required:false,template});hideModal();renderBanco();renderSidebar();}
+
+function renderHints(){const ch=customVars.map(v=>[`{{${v.nome}}}`,`Variável personalizada`]);const all=[...TOKEN_HINTS_BASE,...ch];const mk=l=>l.map(([t,d])=>`<div class="hint-chip"><code style="color:#7a3500;font-weight:700">${t}</code> → ${d}</div>`).join("");document.getElementById("hints-list").innerHTML=mk(all);document.getElementById("hints-modal").innerHTML=mk(all);}
+function setTab(t){document.getElementById("tab-editor").className=t==="editor"?"":"hidden";document.getElementById("tab-banco").className=t==="banco"?"":"hidden";document.querySelectorAll(".tab-btn").forEach((b,i)=>b.className="tab-btn "+(i===(t==="editor"?0:1)?"active":"inactive"));if(t==="banco")renderBanco();}
+function showMsg(type,text){const el=document.getElementById("msg");el.className="msg "+type;el.textContent=text;}
+function resetAll(){if(!confirm("Limpar tudo e recomeçar?"))return;vendedores=[newPessoa()];compradores=[newPessoa()];genV="M";genC="M";customVars=[];selected=new Set(["qualificacao","objeto_imovel","preco_basico","tributos_padrao","mora_padrao","disp_finais","assinatura_eletronica"]);["tipo_contrato","objeto_natureza","objeto_area_const","objeto_area_tot","objeto_logradouro","objeto_numero","objeto_quadra","objeto_bairro","objeto_cidade","objeto_cep","objeto_matricula","objeto_valor","objeto_valor_ext","contrato_cidade"].forEach(id=>{const el=document.getElementById(id);if(el&&el.tagName==="SELECT")el.selectedIndex=0;else if(el)el.value="";});document.getElementById("contrato_data").value=new Date().toISOString().split("T")[0];document.getElementById("msg").className="hidden";renderPessoas();renderSidebar();renderVars();renderHints();updatePreview();}
+
+// INIT
+document.getElementById("contrato_data").value=new Date().toISOString().split("T")[0];
+renderHints();renderSidebar();renderPessoas();renderVars();updatePreview();
+</script>
+</body>
+</html>
