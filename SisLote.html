@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SisLote — Chácaras Alianças</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --nav:#0d2137;--nav2:#132d4a;--accent:#1e6fa8;--accent2:#1557a5;
+  --green:#1e7e34;--red:#c0392b;--orange:#e67e22;--yellow:#d4ac0d;--blue:#2980b9;
+  --bg:#f0f4f8;--card:#fff;--border:#dde3ea;--text:#1a2836;--muted:#5a7080;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.09)
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#b0c0d0;border-radius:4px}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--nav);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.brand{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand-title{font-size:17px;font-weight:800;color:#fff;letter-spacing:.5px}
+.brand-sub{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:2px;margin-top:2px}
+.nav-section{padding:10px 10px 0}
+.nav-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:2px;padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:var(--accent);color:#fff;font-weight:700}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:auto}
+.sidebar-footer{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.08)}
+.sidebar-footer-text{font-size:10px;color:rgba(255,255,255,.25);text-align:center}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.page-title{font-size:18px;font-weight:700;color:var(--text)}
+.page-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.content{padding:20px 24px;flex:1}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{filter:brightness(.9)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{filter:brightness(.9)}
+.btn-secondary{background:#fff;color:var(--text);border:1.5px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.btn-icon{padding:6px 8px}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:700;color:var(--text)}
+.card-body{padding:18px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:26px;font-weight:800;margin:4px 0 2px;color:var(--text)}
+.stat-detail{font-size:11px;color:var(--muted)}
+.stat-icon{font-size:28px;float:right;opacity:.15;margin-top:-4px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f7f9fb;border-bottom:2px solid var(--border);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+td{padding:10px 12px;border-bottom:1px solid #f0f3f6;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7fbff}
+.td-actions{display:flex;gap:4px;justify-content:flex-end}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:#e8f5e9;color:#1b6f2a}
+.badge-red{background:#fdecea;color:#9b2727}
+.badge-orange{background:#fff3e0;color:#8a4c00}
+.badge-blue{background:#e3f2fd;color:#1a5a8a}
+.badge-gray{background:#f0f0f0;color:#555}
+.badge-yellow{background:#fffde7;color:#7a6000}
+.badge-purple{background:#f3e5f5;color:#5a1a7a}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.form-input{padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(30,111,168,.1)}
+select.form-input option{background:#fff}
+textarea.form-input{resize:vertical;min-height:80px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;border-radius:14px 14px 0 0}
+.modal-title{font-size:16px;font-weight:700}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.btn-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;padding:2px 6px}
+.btn-close:hover{color:var(--text)}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.filter-input{padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-family:inherit;outline:none;background:#fff}
+.filter-input:focus{border-color:var(--accent)}
+
+/* PARCELAS */
+.parcela-calc{background:#f7f9fb;border-radius:8px;padding:12px 14px;border:1px solid var(--border)}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:13px}
+.calc-row.total{font-weight:700;font-size:14px;padding-top:8px;border-top:1.5px solid var(--border);margin-top:6px}
+.calc-label{color:var(--muted)}
+.calc-value{font-weight:600}
+.calc-red{color:var(--red)}
+.calc-orange{color:var(--orange)}
+
+/* ALERTS */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;display:flex;align-items:flex-start;gap:10px}
+.alert-warning{background:#fff8e1;border:1px solid #ffe082;color:#6d4c00}
+.alert-info{background:#e3f2fd;border:1px solid #90caf9;color:#0d47a1}
+.alert-success{background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20}
+.alert-danger{background:#fdecea;border:1px solid #ef9a9a;color:#7f0000}
+
+/* PROGRESS */
+.progress{height:6px;border-radius:3px;background:#e0e7ef;overflow:hidden}
+.progress-bar{height:100%;border-radius:3px;background:var(--accent);transition:width .3s}
+
+/* TABS */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab-btn{padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:all .15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.3}
+.empty-text{font-size:15px;font-weight:600;margin-bottom:6px}
+.empty-sub{font-size:13px}
+
+/* SECTION VISIBILITY */
+.section{display:none}.section.active{display:block}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-item{padding:12px 16px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:slideIn .25s ease;min-width:220px}
+.toast-ok{background:#1e7e34}.toast-err{background:#c0392b}.toast-info{background:#1e6fa8}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* PRINT */
+@media print{.sidebar,.topbar,.topbar-actions,.td-actions,.filter-bar,.btn{display:none!important}
+.main{overflow:visible}.content{padding:0}body{display:block}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-title">🌳 SisLote</div>
+    <div class="brand-sub">Chácaras Alianças</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Geral</div>
+    <div class="nav-item active" data-section="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Cadastros</div>
+    <div class="nav-item" data-section="lotes" onclick="navigate('lotes')">
+      <span class="nav-icon">🗺️</span> Lotes
+    </div>
+    <div class="nav-item" data-section="compradores" onclick="navigate('compradores')">
+      <span class="nav-icon">👥</span> Compradores
+    </div>
+    <div class="nav-item" data-section="contratos" onclick="navigate('contratos')">
+      <span class="nav-icon">📄</span> Contratos
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Financeiro</div>
+    <div class="nav-item" data-section="parcelas" onclick="navigate('parcelas')">
+      <span class="nav-icon">💰</span> Parcelas
+      <span class="nav-badge" id="badge-parcelas" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-section="relatorio" onclick="navigate('relatorio')">
+      <span class="nav-icon">📈</span> Relatório
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-text">SisLote v1.0 · Scomparin Adv.</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="page-sub" id="page-sub">Visão geral do loteamento</div>
+    </div>
+    <div class="topbar-actions" id="topbar-actions"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="sec-dashboard" class="section active">
+      <div class="stats-grid" id="dash-stats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Parcelas em Atraso</span><a href="#" onclick="navigate('parcelas');filterParcelasStatus('Atrasado');return false" class="btn btn-sm btn-secondary">Ver todas</a></div>
+          <div class="card-body" id="dash-atraso"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📅 Vencem nos Próximos 7 Dias</span></div>
+          <div class="card-body" id="dash-vencendo"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px" class="card">
+        <div class="card-header"><span class="card-title">📄 Status dos Contratos</span></div>
+        <div class="card-body" id="dash-contratos"></div>
+      </div>
+    </div>
+
+    <!-- ===== LOTES ===== -->
+    <div id="sec-lotes" class="section">
+      <div class="filter-bar">
+        <input class="filter-input" id="lote-search" placeholder="🔍 Buscar lote..." oninput="renderLotes()">
+        <select class="filter-input" id="lote-status" onchange="renderLotes()">
+          <option value="">Todos os status</option>
+          <option>Disponível</option><option>Vendido</option><option>Reservado</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="lote-count">Lotes</span>
+        </div>
+        <div class="table-wrap"><table id="lotes-table"><thead><tr>
+          <th>Lote / Chácara</th><th>Área</th><th>Valor</th><th>Status</th><th>Comprador</th><th></th>
+        </tr></thead><tbody id="lotes-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== COMPRADORES ===== -->
+    <div id="sec-compradores" class="section">
+      <div class="filter-bar">
+        <input class="filter-input" id="comp-search" placeholder="🔍 Buscar comprador..." oninput="renderCompradores()">
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title" id="comp-count">Compradores</span></div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Contratos</th><th></th>
+        </tr></thead><tbody id="compradores-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== CONTRATOS ===== -->
+    <div id="sec-contratos" class="section">
+      <div class="filter-bar">
+        <input class="filter-input" id="cont-search" placeholder="🔍 Buscar contrato..." oninput="renderContratos()">
+        <select class="filter-input" id="cont-status" onchange="renderContratos()">
+          <option value="">Todos os status</option>
+          <option>Ativo</option><option>Inadimplente</option><option>Quitado</option><option>Distratado</option><option>Suspenso</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title" id="cont-count">Contratos</span></div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Contrato</th><th>Comprador</th><th>Lote</th><th>Valor Parcela</th><th>Parcelas</th><th>Progresso</th><th>Status</th><th></th>
+        </tr></thead><tbody id="contratos-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== PARCELAS ===== -->
+    <div id="sec-parcelas" class="section">
+      <div class="filter-bar">
+        <select class="filter-input" id="parc-contrato" onchange="renderParcelas()">
+          <option value="">Todos os contratos</option>
+        </select>
+        <select class="filter-input" id="parc-status" onchange="renderParcelas()">
+          <option value="">Todos os status</option>
+          <option>Pendente</option><option>Atrasado</option><option>Pago</option><option>Pago com Atraso</option><option>Antecipado</option>
+        </select>
+        <input class="filter-input" id="parc-search" placeholder="🔍 Buscar..." oninput="renderParcelas()">
+      </div>
+      <div class="card" style="margin-bottom:14px" id="parc-summary-card" style="display:none">
+        <div class="card-body" id="parc-summary"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title" id="parc-count">Parcelas</span>
+          <button class="btn btn-sm btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>#</th><th>Contrato</th><th>Vencimento</th><th>Valor</th><th>Dias Atraso</th><th>Multa</th><th>Juros</th><th>Total Atualizado</th><th>Status</th><th></th>
+        </tr></thead><tbody id="parcelas-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== RELATÓRIO ===== -->
+    <div id="sec-relatorio" class="section">
+      <div class="stats-grid" id="rel-stats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:0">
+        <div class="card">
+          <div class="card-header"><span class="card-title">💸 Inadimplentes</span></div>
+          <div class="card-body" id="rel-inadimplentes"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📅 Receita por Mês (Pago)</span></div>
+          <div class="card-body" id="rel-receita"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODAL LOTE -->
+<div class="modal-overlay" id="modal-lote" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-lote-title">Novo Lote</span>
+      <button class="btn-close" onclick="closeModal('modal-lote')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Identificação *</label><input class="form-input" id="f-lote-nome" placeholder="Ex: Chácara 03"></div>
+        <div class="form-group"><label class="form-label">Área (m²)</label><input class="form-input" type="number" id="f-lote-area" placeholder="Ex: 5000"></div>
+        <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" type="number" step="0.01" id="f-lote-valor"></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-input" id="f-lote-status"><option>Disponível</option><option>Vendido</option><option>Reservado</option></select>
+        </div>
+        <div class="form-group full"><label class="form-label">Matrícula / Registro</label><input class="form-input" id="f-lote-matricula"></div>
+        <div class="form-group full"><label class="form-label">Observações</label><textarea class="form-input" id="f-lote-obs"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-lote')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveLote()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPRADOR -->
+<div class="modal-overlay" id="modal-comp" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-comp-title">Novo Comprador</span>
+      <button class="btn-close" onclick="closeModal('modal-comp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Nome Completo *</label><input class="form-input" id="f-comp-nome"></div>
+        <div class="form-group"><label class="form-label">CPF</label><input class="form-input" id="f-comp-cpf" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label class="form-label">RG</label><input class="form-input" id="f-comp-rg"></div>
+        <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="f-comp-tel" placeholder="(00) 00000-0000"></div>
+        <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="f-comp-email"></div>
+        <div class="form-group"><label class="form-label">Estado Civil</label>
+          <select class="form-input" id="f-comp-ecivil"><option>Solteiro(a)</option><option>Casado(a)</option><option>Divorciado(a)</option><option>Viúvo(a)</option><option>União Estável</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Profissão</label><input class="form-input" id="f-comp-prof"></div>
+        <div class="form-group full"><label class="form-label">Endereço</label><input class="form-input" id="f-comp-end"></div>
+        <div class="form-group full"><label class="form-label">Observações</label><textarea class="form-input" id="f-comp-obs"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-comp')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveComprador()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTRATO -->
+<div class="modal-overlay" id="modal-cont" style="display:none">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-cont-title">Novo Contrato</span>
+      <button class="btn-close" onclick="closeModal('modal-cont')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Título do Contrato *</label><input class="form-input" id="f-cont-titulo" placeholder="Ex: Chácara 03 — FULANO DE TAL"></div>
+        <div class="form-group"><label class="form-label">Comprador *</label><select class="form-input" id="f-cont-comprador"></select></div>
+        <div class="form-group"><label class="form-label">Lote *</label><select class="form-input" id="f-cont-lote"></select></div>
+        <div class="form-group"><label class="form-label">Data de Assinatura</label><input class="form-input" type="date" id="f-cont-data"></div>
+        <div class="form-group"><label class="form-label">Dia de Vencimento</label><input class="form-input" type="number" min="1" max="28" id="f-cont-diavenc" placeholder="Ex: 10"></div>
+        <div class="form-group"><label class="form-label">Valor Total (R$)</label><input class="form-input" type="number" step="0.01" id="f-cont-total"></div>
+        <div class="form-group"><label class="form-label">Valor de Entrada (R$)</label><input class="form-input" type="number" step="0.01" id="f-cont-entrada" value="0"></div>
+        <div class="form-group"><label class="form-label">Nº de Parcelas</label><input class="form-input" type="number" id="f-cont-nparc"></div>
+        <div class="form-group"><label class="form-label">Valor da Parcela (R$)</label><input class="form-input" type="number" step="0.01" id="f-cont-vparcela"></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-input" id="f-cont-status"><option>Ativo</option><option>Inadimplente</option><option>Quitado</option><option>Distratado</option><option>Suspenso</option></select>
+        </div>
+        <div class="form-group full"><label class="form-label">Observações</label><textarea class="form-input" id="f-cont-obs"></textarea></div>
+      </div>
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <span>As parcelas serão geradas automaticamente ao salvar o contrato. O sistema cria os próximos <strong>24 meses</strong> de parcelas a partir da data de assinatura.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-cont')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveContrato()">Salvar e Gerar Parcelas</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRAR PAGAMENTO -->
+<div class="modal-overlay" id="modal-pagamento" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">Registrar Pagamento</span>
+      <button class="btn-close" onclick="closeModal('modal-pagamento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-pag-info" class="parcela-calc" style="margin-bottom:14px"></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Data do Pagamento *</label><input class="form-input" type="date" id="f-pag-data"></div>
+        <div class="form-group"><label class="form-label">Valor Pago (R$) *</label><input class="form-input" type="number" step="0.01" id="f-pag-valor"></div>
+        <div class="form-group full"><label class="form-label">Observações</label><input class="form-input" id="f-pag-obs"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-pagamento')">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmarPagamento()">✓ Confirmar Pagamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER CONTRATO (parcelas) -->
+<div class="modal-overlay" id="modal-ver-contrato" style="display:none">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-ver-title">Detalhes do Contrato</span>
+      <button class="btn-close" onclick="closeModal('modal-ver-contrato')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-ver-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATABASE (IndexedDB)
+// ═══════════════════════════════════════════════════════
+const DB_NAME = 'SisLote', DB_VER = 1;
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      const stores = [
+        { name:'lotes', key:'id' },
+        { name:'compradores', key:'id' },
+        { name:'contratos', key:'id' },
+        { name:'parcelas', key:'id' },
+      ];
+      stores.forEach(s => {
+        if (!d.objectStoreNames.contains(s.name)) {
+          const store = d.createObjectStore(s.name, {keyPath:s.key, autoIncrement:true});
+          if (s.name === 'parcelas') {
+            store.createIndex('contrato_id','contrato_id',{unique:false});
+            store.createIndex('status','status',{unique:false});
+            store.createIndex('vencimento','vencimento',{unique:false});
+          }
+          if (s.name === 'contratos') {
+            store.createIndex('status','status',{unique:false});
+          }
+        }
+      });
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = e => rej(e.target.error);
+  });
+}
+
+function dbGet(store, id) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).get(id);
+    req.onsuccess = ()=>res(req.result);
+    req.onerror = ()=>rej(req.error);
+  });
+}
+function dbGetAll(store) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = ()=>res(req.result);
+    req.onerror = ()=>rej(req.error);
+  });
+}
+function dbPut(store, item) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readwrite');
+    const req = tx.objectStore(store).put(item);
+    req.onsuccess = ()=>res(req.result);
+    req.onerror = ()=>rej(req.error);
+  });
+}
+function dbDelete(store, id) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readwrite');
+    const req = tx.objectStore(store).delete(id);
+    req.onsuccess = ()=>res();
+    req.onerror = ()=>rej(req.error);
+  });
+}
+function dbCountAll(store) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).count();
+    req.onsuccess = ()=>res(req.result);
+    req.onerror = ()=>rej(req.error);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+function fmt(n, dec=2) {
+  if(n==null||isNaN(n)) return '—';
+  return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtDate(d) {
+  if(!d) return '—';
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+function isoDate(d) {
+  if(!d) return null;
+  const dt = new Date(d+'T00:00:00');
+  return isNaN(dt)?null:d;
+}
+function addMonths(dateStr, n) {
+  const d = new Date(dateStr+'T00:00:00');
+  d.setMonth(d.getMonth()+n);
+  return d.toISOString().split('T')[0];
+}
+function diasAtraso(vencimento) {
+  if(!vencimento) return 0;
+  const venc = new Date(vencimento+'T00:00:00');
+  const diff = Math.floor((TODAY-venc)/(86400000));
+  return diff>0?diff:0;
+}
+function calcFinanceiro(valor, dias) {
+  const multa = dias>0 ? valor*0.02 : 0;
+  const juros = dias>0 ? valor*0.01*(dias/30) : 0;
+  const total = valor + multa + juros;
+  const honor = dias>30 ? total*0.10 : 0;
+  return { multa, juros, total, honor };
+}
+function statusParcela(p) {
+  if(p.status === 'Pago' || p.status === 'Pago com Atraso' || p.status === 'Antecipado') return p.status;
+  const dias = diasAtraso(p.vencimento);
+  return dias>0 ? 'Atrasado' : 'Pendente';
+}
+function badgeStatus(s) {
+  const map = {
+    'Ativo':'badge-green','Ativo ':'badge-green',
+    'Inadimplente':'badge-red','Distratado':'badge-orange','Suspenso':'badge-yellow','Quitado':'badge-blue',
+    'Pago':'badge-green','Antecipado':'badge-blue','Pendente':'badge-gray',
+    'Atrasado':'badge-red','Pago com Atraso':'badge-orange',
+    'Disponível':'badge-green','Vendido':'badge-blue','Reservado':'badge-yellow',
+  };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+const titles = {
+  dashboard:['Dashboard','Visão geral do loteamento'],
+  lotes:['Lotes','Cadastro e status dos lotes'],
+  compradores:['Compradores','Ficha dos compradores'],
+  contratos:['Contratos','Contratos de compra e venda'],
+  parcelas:['Parcelas','Controle de pagamentos'],
+  relatorio:['Relatório','Análise financeira'],
+};
+function navigate(sec) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('sec-'+sec).classList.add('active');
+  document.querySelector(`[data-section="${sec}"]`).classList.add('active');
+  document.getElementById('page-title').textContent = titles[sec][0];
+  document.getElementById('page-sub').textContent = titles[sec][1];
+  const actions = document.getElementById('topbar-actions');
+  actions.innerHTML = '';
+  if(sec==='lotes') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalLote()">+ Novo Lote</button>`;
+  if(sec==='compradores') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalComprador()">+ Novo Comprador</button>`;
+  if(sec==='contratos') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalContrato()">+ Novo Contrato</button>`;
+  // Render section
+  const renders = {dashboard:renderDashboard,lotes:renderLotes,compradores:renderCompradores,contratos:renderContratos,parcelas:renderParcelas,relatorio:renderRelatorio};
+  if(renders[sec]) renders[sec]();
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════
+function openModal(id){ document.getElementById(id).style.display='flex'; }
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.style.display='none'}));
+
+// ═══════════════════════════════════════════════════════
+// LOTES
+// ═══════════════════════════════════════════════════════
+let editingLoteId = null;
+async function openModalLote(id=null) {
+  editingLoteId = id;
+  document.getElementById('modal-lote-title').textContent = id ? 'Editar Lote' : 'Novo Lote';
+  if(id) {
+    const l = await dbGet('lotes',id);
+    document.getElementById('f-lote-nome').value = l.nome||'';
+    document.getElementById('f-lote-area').value = l.area||'';
+    document.getElementById('f-lote-valor').value = l.valor||'';
+    document.getElementById('f-lote-status').value = l.status||'Disponível';
+    document.getElementById('f-lote-matricula').value = l.matricula||'';
+    document.getElementById('f-lote-obs').value = l.obs||'';
+  } else {
+    ['f-lote-nome','f-lote-area','f-lote-valor','f-lote-matricula','f-lote-obs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-lote-status').value='Disponível';
+  }
+  openModal('modal-lote');
+}
+async function saveLote() {
+  const nome = document.getElementById('f-lote-nome').value.trim();
+  if(!nome){toast('Informe o nome/identificação do lote','err');return;}
+  const item = {
+    nome, area: +document.getElementById('f-lote-area').value||null,
+    valor: +document.getElementById('f-lote-valor').value||null,
+    status: document.getElementById('f-lote-status').value,
+    matricula: document.getElementById('f-lote-matricula').value.trim(),
+    obs: document.getElementById('f-lote-obs').value.trim(),
+  };
+  if(editingLoteId) item.id = editingLoteId;
+  await dbPut('lotes',item);
+  closeModal('modal-lote');
+  toast(editingLoteId?'Lote atualizado':'Lote cadastrado');
+  renderLotes();
+}
+async function deleteLote(id) {
+  if(!confirm('Excluir este lote?')) return;
+  await dbDelete('lotes',id);
+  toast('Lote excluído','info');
+  renderLotes();
+}
+async function renderLotes() {
+  const all = await dbGetAll('lotes');
+  const compradores = await dbGetAll('compradores');
+  const contratos = await dbGetAll('contratos');
+  const search = document.getElementById('lote-search').value.toLowerCase();
+  const statusF = document.getElementById('lote-status').value;
+  const compMap = Object.fromEntries(compradores.map(c=>[c.id,c.nome]));
+  const loteCompMap = {};
+  contratos.forEach(ct=>{if(ct.lote_id)loteCompMap[ct.lote_id]=ct.comprador_id;});
+  let rows = all.filter(l=>{
+    const ok1 = !search || l.nome.toLowerCase().includes(search);
+    const ok2 = !statusF || l.status===statusF;
+    return ok1&&ok2;
+  });
+  document.getElementById('lote-count').textContent = `Lotes (${rows.length})`;
+  const tbody = document.getElementById('lotes-tbody');
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-text">Nenhum lote encontrado</div></div></td></tr>`;return;}
+  tbody.innerHTML = rows.map(l=>{
+    const compId = loteCompMap[l.id];
+    const comp = compId ? compMap[compId]||'—' : '—';
+    return `<tr>
+      <td><strong>${l.nome}</strong>${l.matricula?`<br><small style="color:var(--muted)">${l.matricula}</small>`:''}</td>
+      <td>${l.area?l.area.toLocaleString('pt-BR')+' m²':'—'}</td>
+      <td>${l.valor?fmt(l.valor):'—'}</td>
+      <td>${badgeStatus(l.status)}</td>
+      <td>${comp}</td>
+      <td class="td-actions">
+        <button class="btn btn-xs btn-secondary" onclick="openModalLote(${l.id})">✏️</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteLote(${l.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// COMPRADORES
+// ═══════════════════════════════════════════════════════
+let editingCompId = null;
+async function openModalComprador(id=null) {
+  editingCompId = id;
+  document.getElementById('modal-comp-title').textContent = id ? 'Editar Comprador' : 'Novo Comprador';
+  if(id) {
+    const c = await dbGet('compradores',id);
+    document.getElementById('f-comp-nome').value=c.nome||'';
+    document.getElementById('f-comp-cpf').value=c.cpf||'';
+    document.getElementById('f-comp-rg').value=c.rg||'';
+    document.getElementById('f-comp-tel').value=c.tel||'';
+    document.getElementById('f-comp-email').value=c.email||'';
+    document.getElementById('f-comp-ecivil').value=c.ecivil||'Solteiro(a)';
+    document.getElementById('f-comp-prof').value=c.prof||'';
+    document.getElementById('f-comp-end').value=c.end||'';
+    document.getElementById('f-comp-obs').value=c.obs||'';
+  } else {
+    ['f-comp-nome','f-comp-cpf','f-comp-rg','f-comp-tel','f-comp-email','f-comp-prof','f-comp-end','f-comp-obs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-comp-ecivil').value='Solteiro(a)';
+  }
+  openModal('modal-comp');
+}
+async function saveComprador() {
+  const nome = document.getElementById('f-comp-nome').value.trim();
+  if(!nome){toast('Informe o nome do comprador','err');return;}
+  const item = {
+    nome, cpf:document.getElementById('f-comp-cpf').value.trim(),
+    rg:document.getElementById('f-comp-rg').value.trim(),
+    tel:document.getElementById('f-comp-tel').value.trim(),
+    email:document.getElementById('f-comp-email').value.trim(),
+    ecivil:document.getElementById('f-comp-ecivil').value,
+    prof:document.getElementById('f-comp-prof').value.trim(),
+    end:document.getElementById('f-comp-end').value.trim(),
+    obs:document.getElementById('f-comp-obs').value.trim(),
+  };
+  if(editingCompId) item.id = editingCompId;
+  await dbPut('compradores',item);
+  closeModal('modal-comp');
+  toast(editingCompId?'Comprador atualizado':'Comprador cadastrado');
+  renderCompradores();
+}
+async function deleteComprador(id) {
+  if(!confirm('Excluir este comprador?')) return;
+  await dbDelete('compradores',id);
+  toast('Comprador excluído','info');
+  renderCompradores();
+}
+async function renderCompradores() {
+  const all = await dbGetAll('compradores');
+  const contratos = await dbGetAll('contratos');
+  const search = document.getElementById('comp-search').value.toLowerCase();
+  const compConts = {};
+  contratos.forEach(ct=>{if(ct.comprador_id){compConts[ct.comprador_id]=(compConts[ct.comprador_id]||0)+1;}});
+  let rows = all.filter(c=>!search||c.nome.toLowerCase().includes(search)||c.cpf?.includes(search));
+  document.getElementById('comp-count').textContent = `Compradores (${rows.length})`;
+  const tbody = document.getElementById('compradores-tbody');
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Nenhum comprador encontrado</div></div></td></tr>`;return;}
+  tbody.innerHTML = rows.map(c=>`<tr>
+    <td><strong>${c.nome}</strong>${c.prof?`<br><small style="color:var(--muted)">${c.prof}</small>`:''}</td>
+    <td>${c.cpf||'—'}</td><td>${c.tel||'—'}</td><td>${c.email||'—'}</td>
+    <td><span class="badge badge-blue">${compConts[c.id]||0} contrato(s)</span></td>
+    <td class="td-actions">
+      <button class="btn btn-xs btn-secondary" onclick="openModalComprador(${c.id})">✏️</button>
+      <button class="btn btn-xs btn-danger" onclick="deleteComprador(${c.id})">🗑️</button>
+    </td>
+  </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CONTRATOS
+// ═══════════════════════════════════════════════════════
+let editingContId = null;
+async function openModalContrato(id=null) {
+  editingContId = id;
+  document.getElementById('modal-cont-title').textContent = id ? 'Editar Contrato' : 'Novo Contrato';
+  // Populate selects
+  const comps = await dbGetAll('compradores');
+  const lotes = await dbGetAll('lotes');
+  document.getElementById('f-cont-comprador').innerHTML = comps.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('f-cont-lote').innerHTML = lotes.map(l=>`<option value="${l.id}">${l.nome}</option>`).join('');
+  if(id) {
+    const ct = await dbGet('contratos',id);
+    document.getElementById('f-cont-titulo').value=ct.titulo||'';
+    document.getElementById('f-cont-comprador').value=ct.comprador_id||'';
+    document.getElementById('f-cont-lote').value=ct.lote_id||'';
+    document.getElementById('f-cont-data').value=ct.data_assinatura||'';
+    document.getElementById('f-cont-diavenc').value=ct.dia_vencimento||10;
+    document.getElementById('f-cont-total').value=ct.valor_total||'';
+    document.getElementById('f-cont-entrada').value=ct.valor_entrada||0;
+    document.getElementById('f-cont-nparc').value=ct.numero_parcelas||'';
+    document.getElementById('f-cont-vparcela').value=ct.valor_parcela||'';
+    document.getElementById('f-cont-status').value=ct.status||'Ativo';
+    document.getElementById('f-cont-obs').value=ct.obs||'';
+  } else {
+    ['f-cont-titulo','f-cont-data','f-cont-total','f-cont-nparc','f-cont-vparcela','f-cont-obs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-cont-entrada').value='0';
+    document.getElementById('f-cont-diavenc').value='10';
+    document.getElementById('f-cont-status').value='Ativo';
+  }
+  openModal('modal-cont');
+}
+async function saveContrato() {
+  const titulo = document.getElementById('f-cont-titulo').value.trim();
+  if(!titulo){toast('Informe o título do contrato','err');return;}
+  const compId = +document.getElementById('f-cont-comprador').value||null;
+  const loteId = +document.getElementById('f-cont-lote').value||null;
+  const dataAss = document.getElementById('f-cont-data').value;
+  const diavenc = +document.getElementById('f-cont-diavenc').value||10;
+  const total = +document.getElementById('f-cont-total').value||0;
+  const entrada = +document.getElementById('f-cont-entrada').value||0;
+  const nparc = +document.getElementById('f-cont-nparc').value||0;
+  const vparcela = +document.getElementById('f-cont-vparcela').value||0;
+  const status = document.getElementById('f-cont-status').value;
+  const obs = document.getElementById('f-cont-obs').value.trim();
+  const item = {titulo,comprador_id:compId,lote_id:loteId,data_assinatura:dataAss,dia_vencimento:diavenc,valor_total:total,valor_entrada:entrada,numero_parcelas:nparc,valor_parcela:vparcela,status,obs};
+  if(editingContId) item.id = editingContId;
+  const newId = await dbPut('contratos',item);
+  const ctId = editingContId || newId;
+  // Update lote status to Vendido
+  if(loteId) {
+    const lote = await dbGet('lotes',loteId);
+    if(lote && lote.status==='Disponível'){lote.status='Vendido';await dbPut('lotes',lote);}
+  }
+  // Generate parcelas if new contract
+  if(!editingContId && dataAss && nparc>0 && vparcela>0) {
+    await gerarParcelas(ctId, dataAss, diavenc, vparcela, nparc);
+  }
+  closeModal('modal-cont');
+  toast(editingContId?'Contrato atualizado':'Contrato criado e parcelas geradas!');
+  renderContratos();
+}
+async function gerarParcelas(contId, dataAss, dia, valor, nparc) {
+  const meses = Math.min(nparc, 24);
+  const base = new Date(dataAss+'T00:00:00');
+  for(let i=1;i<=meses;i++){
+    const d = new Date(base);
+    d.setMonth(d.getMonth()+i);
+    d.setDate(Math.min(dia,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
+    const venc = d.toISOString().split('T')[0];
+    const dias = diasAtraso(venc);
+    let st = dias>0?'Atrasado':'Pendente';
+    await dbPut('parcelas',{contrato_id:contId,numero:i,vencimento:venc,valor,valor_pago:null,data_pagamento:null,status:st,obs:''});
+  }
+}
+async function deleteContrato(id) {
+  if(!confirm('Excluir este contrato e todas as suas parcelas?')) return;
+  const parcelas = await dbGetAll('parcelas');
+  for(const p of parcelas.filter(p=>p.contrato_id===id)) await dbDelete('parcelas',p.id);
+  await dbDelete('contratos',id);
+  toast('Contrato excluído','info');
+  renderContratos();
+}
+async function renderContratos() {
+  const contratos = await dbGetAll('contratos');
+  const compradores = await dbGetAll('compradores');
+  const lotes = await dbGetAll('lotes');
+  const parcelas = await dbGetAll('parcelas');
+  const search = document.getElementById('cont-search').value.toLowerCase();
+  const statusF = document.getElementById('cont-status').value;
+  const compMap = Object.fromEntries(compradores.map(c=>[c.id,c.nome]));
+  const loteMap = Object.fromEntries(lotes.map(l=>[l.id,l.nome]));
+  let rows = contratos.filter(ct=>{
+    const ok1 = !search||ct.titulo.toLowerCase().includes(search)||(compMap[ct.comprador_id]||'').toLowerCase().includes(search);
+    const ok2 = !statusF||ct.status===statusF;
+    return ok1&&ok2;
+  });
+  document.getElementById('cont-count').textContent=`Contratos (${rows.length})`;
+  const tbody = document.getElementById('contratos-tbody');
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">Nenhum contrato encontrado</div></div></td></tr>`;return;}
+  tbody.innerHTML = rows.map(ct=>{
+    const pagas = parcelas.filter(p=>p.contrato_id===ct.id&&(p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado')).length;
+    const total = parcelas.filter(p=>p.contrato_id===ct.id).length;
+    const pct = total>0?Math.round(pagas/total*100):0;
+    return `<tr>
+      <td><strong>${ct.titulo}</strong>${ct.data_assinatura?`<br><small style="color:var(--muted)">${fmtDate(ct.data_assinatura)}</small>`:''}</td>
+      <td>${compMap[ct.comprador_id]||'—'}</td>
+      <td>${loteMap[ct.lote_id]||'—'}</td>
+      <td>${fmt(ct.valor_parcela)}</td>
+      <td><small>${pagas}/${ct.numero_parcelas||total} pagas</small></td>
+      <td style="min-width:100px"><div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div><small style="color:var(--muted)">${pct}%</small></td>
+      <td>${badgeStatus(ct.status)}</td>
+      <td class="td-actions">
+        <button class="btn btn-xs btn-primary" onclick="verContrato(${ct.id})" title="Ver parcelas">📋</button>
+        <button class="btn btn-xs btn-secondary" onclick="openModalContrato(${ct.id})">✏️</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteContrato(${ct.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+async function verContrato(id) {
+  const ct = await dbGet('contratos',id);
+  const compradores = await dbGetAll('compradores');
+  const lotes = await dbGetAll('lotes');
+  const parcelas = (await dbGetAll('parcelas')).filter(p=>p.contrato_id===id).sort((a,b)=>a.numero-b.numero);
+  const comp = compradores.find(c=>c.id===ct.comprador_id);
+  const lote = lotes.find(l=>l.id===ct.lote_id);
+  const pagas = parcelas.filter(p=>p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado');
+  const atrasadas = parcelas.filter(p=>statusParcela(p)==='Atrasado');
+  const totalRecebido = pagas.reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  const totalAtraso = atrasadas.reduce((p,parc)=>{
+    const dias = diasAtraso(parc.vencimento);
+    const calc = calcFinanceiro(parc.valor,dias);
+    return p+calc.total;
+  },0);
+  document.getElementById('modal-ver-title').textContent = ct.titulo;
+  document.getElementById('modal-ver-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="stat-card" style="padding:12px"><div class="stat-label">Comprador</div><div style="font-size:14px;font-weight:700;margin-top:4px">${comp?.nome||'—'}</div></div>
+      <div class="stat-card" style="padding:12px"><div class="stat-label">Lote</div><div style="font-size:14px;font-weight:700;margin-top:4px">${lote?.nome||'—'}</div></div>
+      <div class="stat-card" style="padding:12px"><div class="stat-label">Status</div><div style="margin-top:4px">${badgeStatus(ct.status)}</div></div>
+      <div class="stat-card" style="padding:12px"><div class="stat-label">Valor Parcela</div><div style="font-size:16px;font-weight:800;margin-top:4px;color:var(--accent)">${fmt(ct.valor_parcela)}</div></div>
+      <div class="stat-card" style="padding:12px"><div class="stat-label">Total Recebido</div><div style="font-size:16px;font-weight:800;margin-top:4px;color:var(--green)">${fmt(totalRecebido)}</div></div>
+      <div class="stat-card" style="padding:12px"><div class="stat-label">Em Atraso (Atualizado)</div><div style="font-size:16px;font-weight:800;margin-top:4px;color:${atrasadas.length?'var(--red)':'var(--green)'}">${atrasadas.length?fmt(totalAtraso):'R$ 0,00'}</div></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>#</th><th>Vencimento</th><th>Valor</th><th>Dias Atraso</th><th>Total Atualizado</th><th>Pago em</th><th>Valor Pago</th><th>Status</th><th></th>
+    </tr></thead><tbody>
+    ${parcelas.map(p=>{
+      const st = statusParcela(p);
+      const dias = (st==='Pago'||st==='Antecipado')?0:diasAtraso(p.vencimento);
+      const calc = calcFinanceiro(p.valor,dias);
+      return `<tr>
+        <td>${p.numero}</td>
+        <td>${fmtDate(p.vencimento)}</td>
+        <td>${fmt(p.valor)}</td>
+        <td>${dias>0?`<span style="color:var(--red);font-weight:700">${dias}d</span>`:'—'}</td>
+        <td>${dias>0?`<strong style="color:var(--red)">${fmt(calc.total)}</strong>`:fmt(p.valor)}</td>
+        <td>${fmtDate(p.data_pagamento)}</td>
+        <td>${p.valor_pago?fmt(p.valor_pago):'—'}</td>
+        <td>${badgeStatus(st)}</td>
+        <td>${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id});closeModal('modal-ver-contrato')">💳 Pagar</button>`:''}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+  openModal('modal-ver-contrato');
+}
+
+// ═══════════════════════════════════════════════════════
+// PARCELAS
+// ═══════════════════════════════════════════════════════
+let editingParcId = null;
+function filterParcelasStatus(st) {
+  document.getElementById('parc-status').value = st;
+  renderParcelas();
+}
+async function renderParcelas() {
+  const parcelas = await dbGetAll('parcelas');
+  const contratos = await dbGetAll('contratos');
+  const contMap = Object.fromEntries(contratos.map(c=>[c.id,c.titulo]));
+  // Update contrato filter
+  const sel = document.getElementById('parc-contrato');
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">Todos os contratos</option>' + contratos.map(ct=>`<option value="${ct.id}">${ct.titulo}</option>`).join('');
+  sel.value = curVal;
+  const filtCont = +sel.value||null;
+  const filtStatus = document.getElementById('parc-status').value;
+  const search = document.getElementById('parc-search').value.toLowerCase();
+  let rows = parcelas.map(p=>({...p,_status:statusParcela(p)})).filter(p=>{
+    const ok1 = !filtCont||p.contrato_id===filtCont;
+    const ok2 = !filtStatus||p._status===filtStatus;
+    const ok3 = !search||(contMap[p.contrato_id]||'').toLowerCase().includes(search)||String(p.numero).includes(search);
+    return ok1&&ok2&&ok3;
+  }).sort((a,b)=>{
+    // Atrasadas primeiro, depois por vencimento
+    const order={Atrasado:0,Pendente:1,Pago:2,'Pago com Atraso':3,Antecipado:4};
+    const oa=order[a._status]??5, ob=order[b._status]??5;
+    if(oa!==ob)return oa-ob;
+    return a.vencimento?.localeCompare(b.vencimento)||0;
+  });
+  // Summary
+  const atrasadas = rows.filter(p=>p._status==='Atrasado');
+  const pendentes = rows.filter(p=>p._status==='Pendente');
+  const pagas = rows.filter(p=>p._status==='Pago'||p._status==='Pago com Atraso'||p._status==='Antecipado');
+  const totalAtrasado = atrasadas.reduce((s,p)=>{const d=diasAtraso(p.vencimento);return s+calcFinanceiro(p.valor,d).total;},0);
+  const totalPago = pagas.reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  if(atrasadas.length||filtCont){
+    document.getElementById('parc-summary').innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div><span style="color:var(--red);font-weight:700">⚠️ ${atrasadas.length}</span> em atraso · <strong style="color:var(--red)">${fmt(totalAtrasado)}</strong> (c/ encargos)</div>
+      <div><span style="color:var(--muted)">📋 ${pendentes.length}</span> pendentes</div>
+      <div><span style="color:var(--green);font-weight:700">✅ ${pagas.length}</span> pagas · <strong style="color:var(--green)">${fmt(totalPago)}</strong></div>
+    </div>`;
+    document.getElementById('parc-summary-card').style.display='';
+  } else {
+    document.getElementById('parc-summary-card').style.display='none';
+  }
+  document.getElementById('parc-count').textContent=`Parcelas (${rows.length})`;
+  const tbody = document.getElementById('parcelas-tbody');
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">💰</div><div class="empty-text">Nenhuma parcela encontrada</div></div></td></tr>`;return;}
+  tbody.innerHTML = rows.map(p=>{
+    const st = p._status;
+    const dias = (st==='Pago'||st==='Antecipado')?0:diasAtraso(p.vencimento);
+    const calc = calcFinanceiro(p.valor,dias);
+    return `<tr>
+      <td><small style="color:var(--muted)">#${p.numero}</small></td>
+      <td style="white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${contMap[p.contrato_id]||''}"><small>${contMap[p.contrato_id]||'—'}</small></td>
+      <td style="white-space:nowrap">${fmtDate(p.vencimento)}</td>
+      <td>${fmt(p.valor)}</td>
+      <td>${dias>0?`<span style="color:var(--red);font-weight:700">${dias}d</span>`:'—'}</td>
+      <td>${dias>0?`<span style="color:var(--red)">${fmt(calc.multa)}</span>`:'—'}</td>
+      <td>${dias>0?`<span style="color:var(--orange)">${fmt(calc.juros)}</span>`:'—'}</td>
+      <td>${dias>0?`<strong style="color:var(--red)">${fmt(calc.total)}</strong>`:fmt(p.valor)}</td>
+      <td>${badgeStatus(st)}</td>
+      <td class="td-actions">
+        ${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id})">💳</button>`:''}
+        ${(st==='Pago'||st==='Pago com Atraso'||st==='Antecipado')?`<button class="btn btn-xs btn-secondary" onclick="estornarParcela(${p.id})" title="Estornar">↩️</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+  // Update badge
+  const atrasadasTotal = (await dbGetAll('parcelas')).filter(p=>diasAtraso(p.vencimento)>0&&p.status!=='Pago'&&p.status!=='Pago com Atraso'&&p.status!=='Antecipado');
+  const badge = document.getElementById('badge-parcelas');
+  if(atrasadasTotal.length){badge.style.display='';badge.textContent=atrasadasTotal.length;}
+  else badge.style.display='none';
+}
+async function abrirPagamento(id) {
+  editingParcId = id;
+  const p = await dbGet('parcelas',id);
+  const contratos = await dbGetAll('contratos');
+  const ct = contratos.find(c=>c.id===p.contrato_id);
+  const dias = diasAtraso(p.vencimento);
+  const calc = calcFinanceiro(p.valor,dias);
+  document.getElementById('modal-pag-info').innerHTML = `
+    <div class="calc-row"><span class="calc-label">Contrato</span><strong>${ct?.titulo||'—'}</strong></div>
+    <div class="calc-row"><span class="calc-label">Parcela Nº</span><strong>${p.numero}</strong></div>
+    <div class="calc-row"><span class="calc-label">Vencimento</span><strong>${fmtDate(p.vencimento)}</strong></div>
+    <div class="calc-row"><span class="calc-label">Dias em Atraso</span><strong class="${dias>0?'calc-red':''}">${dias>0?dias+' dias':'—'}</strong></div>
+    <div class="calc-row"><span class="calc-label">Valor Original</span><strong>${fmt(p.valor)}</strong></div>
+    ${dias>0?`
+    <div class="calc-row"><span class="calc-label">Multa (2%)</span><strong class="calc-red">+ ${fmt(calc.multa)}</strong></div>
+    <div class="calc-row"><span class="calc-label">Juros (1%/mês)</span><strong class="calc-orange">+ ${fmt(calc.juros)}</strong></div>
+    ${calc.honor>0?`<div class="calc-row"><span class="calc-label">Honorários Adv. (10%)</span><strong class="calc-red">+ ${fmt(calc.honor)}</strong></div>`:''}
+    <div class="calc-row total"><span class="calc-label">Total a Pagar</span><strong class="calc-red">${fmt(calc.total+(calc.honor||0))}</strong></div>`:''}`;
+  document.getElementById('f-pag-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-pag-valor').value = (dias>0?calc.total:p.valor).toFixed(2);
+  document.getElementById('f-pag-obs').value = '';
+  openModal('modal-pagamento');
+}
+async function confirmarPagamento() {
+  const data = document.getElementById('f-pag-data').value;
+  const valor = +document.getElementById('f-pag-valor').value;
+  if(!data||!valor){toast('Informe data e valor do pagamento','err');return;}
+  const p = await dbGet('parcelas',editingParcId);
+  const venc = new Date(p.vencimento+'T00:00:00');
+  const pago = new Date(data+'T00:00:00');
+  let st;
+  if(pago<venc) st='Antecipado';
+  else if(pago.toDateString()===venc.toDateString()) st='Pago';
+  else st='Pago com Atraso';
+  p.status=st; p.data_pagamento=data; p.valor_pago=valor; p.obs=document.getElementById('f-pag-obs').value;
+  await dbPut('parcelas',p);
+  // Check if all parcelas paid → update contract
+  const allParc = (await dbGetAll('parcelas')).filter(pp=>pp.contrato_id===p.contrato_id);
+  const allPaid = allParc.every(pp=>pp.status==='Pago'||pp.status==='Pago com Atraso'||pp.status==='Antecipado');
+  if(allPaid){
+    const ct = await dbGet('contratos',p.contrato_id);
+    if(ct&&ct.status==='Ativo'){ct.status='Quitado';await dbPut('contratos',ct);}
+  }
+  closeModal('modal-pagamento');
+  toast(`Parcela ${p.numero} marcada como ${st} ✓`);
+  renderParcelas();
+}
+async function estornarParcela(id) {
+  if(!confirm('Estornar pagamento desta parcela?')) return;
+  const p = await dbGet('parcelas',id);
+  const dias = diasAtraso(p.vencimento);
+  p.status = dias>0?'Atrasado':'Pendente';
+  p.data_pagamento=null;p.valor_pago=null;
+  await dbPut('parcelas',p);
+  toast('Pagamento estornado','info');
+  renderParcelas();
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+async function renderDashboard() {
+  const contratos = await dbGetAll('contratos');
+  const parcelas = await dbGetAll('parcelas');
+  const lotes = await dbGetAll('lotes');
+  const compradores = await dbGetAll('compradores');
+  const ativos = contratos.filter(c=>c.status==='Ativo').length;
+  const inadimplentes = contratos.filter(c=>c.status==='Inadimplente').length;
+  const atrasadas = parcelas.filter(p=>statusParcela(p)==='Atrasado');
+  const totalEmAtraso = atrasadas.reduce((s,p)=>{const d=diasAtraso(p.vencimento);return s+calcFinanceiro(p.valor,d).total;},0);
+  const hoje7 = new Date(TODAY);hoje7.setDate(hoje7.getDate()+7);
+  const vencendo = parcelas.filter(p=>{
+    if(p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado') return false;
+    const v=new Date(p.vencimento+'T00:00:00');
+    return v>=TODAY&&v<=hoje7;
+  });
+  const mesAtual = new Date().toISOString().slice(0,7);
+  const pagosMes = parcelas.filter(p=>(p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado')&&p.data_pagamento?.startsWith(mesAtual));
+  const receitaMes = pagosMes.reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-label">Contratos Ativos</div><div class="stat-value">${ativos}</div><div class="stat-detail">${contratos.length} total</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Inadimplentes</div><div class="stat-value" style="color:var(--red)">${inadimplentes}</div><div class="stat-detail">contratos</div></div>
+    <div class="stat-card"><div class="stat-icon">💸</div><div class="stat-label">Parcelas em Atraso</div><div class="stat-value" style="color:var(--red)">${atrasadas.length}</div><div class="stat-detail">${fmt(totalEmAtraso)} c/ encargos</div></div>
+    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-label">Vencem em 7 dias</div><div class="stat-value" style="color:var(--orange)">${vencendo.length}</div><div class="stat-detail">parcelas pendentes</div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Receita no Mês</div><div class="stat-value" style="color:var(--green);font-size:18px">${fmt(receitaMes)}</div><div class="stat-detail">${pagosMes.length} parcelas pagas</div></div>
+    <div class="stat-card"><div class="stat-icon">🗺️</div><div class="stat-label">Lotes Vendidos</div><div class="stat-value">${lotes.filter(l=>l.status==='Vendido').length}</div><div class="stat-detail">de ${lotes.length} lotes</div></div>`;
+  // Atraso list
+  const ctMap = Object.fromEntries(contratos.map(c=>[c.id,c.titulo]));
+  const atrasoEl = document.getElementById('dash-atraso');
+  if(!atrasadas.length){atrasoEl.innerHTML=`<div class="alert alert-success">✅ Nenhuma parcela em atraso!</div>`;} else {
+    atrasoEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px">${atrasadas.slice(0,8).map(p=>{
+      const dias=diasAtraso(p.vencimento);const calc=calcFinanceiro(p.valor,dias);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#fef8f8;border:1px solid #fcc">
+        <div><div style="font-size:12px;font-weight:600">${ctMap[p.contrato_id]||'—'}</div><div style="font-size:11px;color:var(--muted)">Parc. #${p.numero} · Venc. ${fmtDate(p.vencimento)}</div></div>
+        <div style="text-align:right"><div style="color:var(--red);font-weight:700;font-size:13px">${fmt(calc.total)}</div><div style="font-size:10px;color:var(--muted)">${dias}d atraso</div></div>
+      </div>`;
+    }).join('')}${atrasadas.length>8?`<small style="color:var(--muted);text-align:center">+${atrasadas.length-8} mais...</small>`:''}`;
+  }
+  // Vencendo
+  const vencEl = document.getElementById('dash-vencendo');
+  if(!vencendo.length){vencEl.innerHTML=`<div class="alert alert-info">📅 Nenhuma parcela vencendo nos próximos 7 dias.</div>`;}
+  else vencEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px">${vencendo.slice(0,8).map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#fffbf0;border:1px solid #ffe0a0">
+    <div><div style="font-size:12px;font-weight:600">${ctMap[p.contrato_id]||'—'}</div><div style="font-size:11px;color:var(--muted)">Parc. #${p.numero} · ${fmtDate(p.vencimento)}</div></div>
+    <div style="color:var(--orange);font-weight:700">${fmt(p.valor)}</div>
+  </div>`).join('')}</div>`;
+  // Contratos status
+  const contEl = document.getElementById('dash-contratos');
+  const statusCount = {};
+  contratos.forEach(c=>{statusCount[c.status]=(statusCount[c.status]||0)+1;});
+  contEl.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px">${Object.entries(statusCount).map(([st,n])=>`<div style="flex:1;min-width:120px;text-align:center;padding:12px;border-radius:8px;background:var(--bg)">${badgeStatus(st)}<div style="font-size:22px;font-weight:800;margin-top:6px">${n}</div></div>`).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RELATÓRIO
+// ═══════════════════════════════════════════════════════
+async function renderRelatorio() {
+  const contratos = await dbGetAll('contratos');
+  const parcelas = await dbGetAll('parcelas');
+  const ctMap = Object.fromEntries(contratos.map(c=>[c.id,c]));
+  const atrasadas = parcelas.filter(p=>statusParcela(p)==='Atrasado');
+  const totalEmAtraso = atrasadas.reduce((s,p)=>{const d=diasAtraso(p.vencimento);return s+calcFinanceiro(p.valor,d).total;},0);
+  const totalRecebido = parcelas.filter(p=>p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado').reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  const totalPrevisto = parcelas.filter(p=>p.status!=='Pago'&&p.status!=='Pago com Atraso'&&p.status!=='Antecipado').reduce((s,p)=>s+p.valor,0);
+  const totalContratos = contratos.reduce((s,c)=>s+(c.valor_total||0),0);
+  document.getElementById('rel-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label">Valor Total Contratos</div><div class="stat-value" style="font-size:18px">${fmt(totalContratos)}</div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Total Recebido</div><div class="stat-value" style="font-size:18px;color:var(--green)">${fmt(totalRecebido)}</div></div>
+    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">A Receber (Futuro)</div><div class="stat-value" style="font-size:18px;color:var(--blue)">${fmt(totalPrevisto)}</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Em Atraso (c/ encargos)</div><div class="stat-value" style="font-size:18px;color:var(--red)">${fmt(totalEmAtraso)}</div></div>`;
+  // Inadimplentes
+  const inadMap = {};
+  atrasadas.forEach(p=>{
+    const ct = ctMap[p.contrato_id];
+    if(!ct) return;
+    if(!inadMap[p.contrato_id]) inadMap[p.contrato_id]={ct,parcelas:[],total:0};
+    const dias=diasAtraso(p.vencimento);
+    inadMap[p.contrato_id].parcelas.push(p);
+    inadMap[p.contrato_id].total += calcFinanceiro(p.valor,dias).total;
+  });
+  const inadEl = document.getElementById('rel-inadimplentes');
+  const ilist = Object.values(inadMap).sort((a,b)=>b.total-a.total);
+  if(!ilist.length) inadEl.innerHTML=`<div class="alert alert-success">✅ Nenhum inadimplente!</div>`;
+  else inadEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${ilist.map(i=>`<div style="padding:10px 12px;border-radius:8px;background:#fef8f8;border:1px solid #fcc">
+    <div style="font-weight:700;font-size:13px;margin-bottom:4px">${i.ct.titulo}</div>
+    <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--muted)">${i.parcelas.length} parcela(s) em atraso</span><strong style="color:var(--red)">${fmt(i.total)}</strong></div>
+  </div>`).join('')}</div>`;
+  // Receita por mês
+  const receitaMap = {};
+  parcelas.filter(p=>p.data_pagamento).forEach(p=>{
+    const mes = p.data_pagamento.slice(0,7);
+    receitaMap[mes] = (receitaMap[mes]||0)+(p.valor_pago||p.valor||0);
+  });
+  const meses = Object.entries(receitaMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12);
+  const recEl = document.getElementById('rel-receita');
+  if(!meses.length) recEl.innerHTML=`<div class="alert alert-info">Nenhum pagamento registrado ainda.</div>`;
+  else {
+    const max = Math.max(...meses.map(m=>m[1]));
+    recEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px">${meses.map(([m,v])=>{
+      const [y,mo]=m.split('-');
+      const label=`${mo}/${y}`;
+      const pct=Math.round(v/max*100);
+      return `<div style="display:flex;align-items:center;gap:8px">
+        <span style="min-width:55px;font-size:12px;font-weight:600;color:var(--muted)">${label}</span>
+        <div style="flex:1;height:18px;background:#f0f4f8;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px"></div></div>
+        <span style="font-size:12px;font-weight:700;min-width:100px;text-align:right">${fmt(v)}</span>
+      </div>`;
+    }).join('')}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SAMPLE DATA (Chácaras Alianças - dados do Notion)
+// ═══════════════════════════════════════════════════════
+async function hasDados() {
+  const n = await dbCountAll('contratos');
+  return n > 0;
+}
+
+async function carregarDadosExemplo() {
+  // COMPRADORES
+  const compradores = [
+    {nome:'RUBENILTON RIBEIRO DE OLIVEIRA',cpf:'',ecivil:'Solteiro(a)',prof:''},
+    {nome:'JESSICA VASCONCELOS KALENINSKI',cpf:'',ecivil:'Casado(a)',prof:''},
+    {nome:'JAIRO CASSIANO DA SILVA',cpf:'',ecivil:'Casado(a)',prof:''},
+    {nome:'JULIANO LUIZ DE MELLO',cpf:'',ecivil:'Solteiro(a)',prof:''},
+    {nome:'ETERNO BENTO TAVARES',cpf:'',ecivil:'Casado(a)',prof:''},
+    {nome:'GPF REPRESENTAÇÕES LTDA',cpf:'',ecivil:'',prof:'Pessoa Jurídica'},
+    {nome:'ADRIANO SCOMPARIN',cpf:'',ecivil:'Casado(a)',prof:'Advogado'},
+    {nome:'ALEXANDRE LUIZ PAVAN',cpf:'',ecivil:'Casado(a)',prof:''},
+    {nome:'SUZIANE DA SILVA RODRIGUES',cpf:'',ecivil:'Solteiro(a)',prof:''},
+    {nome:'MARCELO JUNIOR PAGLIA',cpf:'',ecivil:'Casado(a)',prof:''},
+    {nome:'EVANDRO LUIZ SCHNEIDER',cpf:'',ecivil:'Casado(a)',prof:''},
+    {nome:'NELZA APARECIDA GONÇALVES',cpf:'',ecivil:'Viúvo(a)',prof:''},
+  ];
+  const compIds = [];
+  for(const c of compradores) compIds.push(await dbPut('compradores',c));
+
+  // LOTES
+  const lotes = [
+    {nome:'Chácara 03',area:20000,valor:314096,status:'Vendido',matricula:''},
+    {nome:'Chácara 04',area:20000,valor:314096,status:'Vendido',matricula:''},
+    {nome:'Chácara 05',area:20000,valor:314096,status:'Vendido',matricula:''},
+    {nome:'Chácara 06',area:20000,valor:314096,status:'Vendido',matricula:''},
+    {nome:'Chácara 07',area:20000,valor:314096,status:'Vendido',matricula:''},
+    {nome:'Chácara 08',area:20000,valor:314096,status:'Vendido',matricula:''},
+    {nome:'Chácara 09',area:18000,valor:280000,status:'Vendido',matricula:''},
+    {nome:'Chácara 10',area:20000,valor:282499,status:'Vendido',matricula:''},
+    {nome:'Chácara 13',area:18000,valor:250000,status:'Vendido',matricula:''},
+    {nome:'Chácara 14',area:18000,valor:260000,status:'Vendido',matricula:''},
+    {nome:'Chácara 15',area:20000,valor:290000,status:'Vendido',matricula:''},
+    {nome:'Chácara 16',area:8000,valor:6666.72,status:'Vendido',matricula:''},
+    {nome:'Chácara 17A',area:15000,valor:240000,status:'Vendido',matricula:''},
+    {nome:'Chácara 17B',area:15000,valor:240000,status:'Vendido',matricula:''},
+    {nome:'Chácara 23',area:18000,valor:270000,status:'Vendido',matricula:''},
+    {nome:'Chácara 27',area:20000,valor:177000,status:'Vendido',matricula:''},
+    {nome:'Chácara 28',area:20000,valor:290000,status:'Vendido',matricula:''},
+    {nome:'Chácara 01',area:20000,valor:350000,status:'Disponível',matricula:''},
+    {nome:'Chácara 02',area:20000,valor:340000,status:'Disponível',matricula:''},
+    {nome:'Chácara 11',area:18000,valor:280000,status:'Disponível',matricula:''},
+    {nome:'Chácara 12',area:18000,valor:270000,status:'Disponível',matricula:''},
+  ];
+  const loteIds = [];
+  for(const l of lotes) loteIds.push(await dbPut('lotes',l));
+
+  // CONTRATOS (dados reais do Notion onde disponível)
+  const contratos = [
+    {titulo:'Chácara 03 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:0,data:'2024-04-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 04 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:1,data:'2024-04-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 05 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:2,data:'2024-05-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 06 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:3,data:'2024-05-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 07 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:4,data:'2024-06-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 08 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:5,data:'2024-06-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 09 — JESSICA VASCONCELOS KALENINSKI',compradorIdx:1,loteIdx:6,data:'2024-07-15',dia:15,total:280000,entrada:28000,nparc:180,vparcela:1400,status:'Ativo'},
+    {titulo:'Chácara 10 — JAIRO CASSIANO DA SILVA',compradorIdx:2,loteIdx:7,data:'2024-08-10',dia:10,total:249999.40,entrada:32500,nparc:180,vparcela:1208.33,status:'Ativo'},
+    {titulo:'Chácara 13 — JULIANO LUIZ DE MELLO',compradorIdx:3,loteIdx:8,data:'2024-09-05',dia:5,total:250000,entrada:25000,nparc:180,vparcela:1250,status:'Ativo'},
+    {titulo:'Chácara 14 — ETERNO BENTO TAVARES',compradorIdx:4,loteIdx:9,data:'2024-09-10',dia:10,total:260000,entrada:26000,nparc:180,vparcela:1300,status:'Ativo'},
+    {titulo:'Chácara 15 — GPF REPRESENTAÇÕES LTDA',compradorIdx:5,loteIdx:10,data:'2024-10-01',dia:1,total:290000,entrada:29000,nparc:180,vparcela:1450,status:'Ativo'},
+    {titulo:'Chácara 16 — ADRIANO SCOMPARIN',compradorIdx:6,loteIdx:11,data:'2024-06-10',dia:10,total:6666.72,entrada:0,nparc:12,vparcela:555.56,status:'Inadimplente'},
+    {titulo:'Chácara 17A — ALEXANDRE LUIZ PAVAN',compradorIdx:7,loteIdx:12,data:'2024-11-10',dia:10,total:240000,entrada:24000,nparc:180,vparcela:1200,status:'Ativo'},
+    {titulo:'Chácara 17B — ALEXANDRE LUIZ PAVAN',compradorIdx:7,loteIdx:13,data:'2024-11-10',dia:10,total:240000,entrada:24000,nparc:180,vparcela:1200,status:'Ativo'},
+    {titulo:'Chácara 23 — SUZIANE DA SILVA RODRIGUES',compradorIdx:8,loteIdx:14,data:'2024-10-20',dia:20,total:270000,entrada:27000,nparc:180,vparcela:1350,status:'Ativo'},
+    {titulo:'Chácara 27 — MARCELO JUNIOR PAGLIA',compradorIdx:9,loteIdx:15,data:'2024-08-16',dia:16,total:177000,entrada:15000,nparc:180,vparcela:900,status:'Distratado'},
+    {titulo:'Chácara 28 — EVANDRO LUIZ SCHNEIDER',compradorIdx:10,loteIdx:16,data:'2024-12-10',dia:10,total:290000,entrada:29000,nparc:180,vparcela:1450,status:'Ativo'},
+  ];
+
+  for(const ct of contratos) {
+    const ctId = await dbPut('contratos',{
+      titulo:ct.titulo,
+      comprador_id:compIds[ct.compradorIdx],
+      lote_id:loteIds[ct.loteIdx],
+      data_assinatura:ct.data,
+      dia_vencimento:ct.dia,
+      valor_total:ct.total,
+      valor_entrada:ct.entrada,
+      numero_parcelas:ct.nparc,
+      valor_parcela:ct.vparcela,
+      status:ct.status,
+      obs:'',
+    });
+    // Gerar parcelas: 24 meses ou número total se menor
+    const meses = Math.min(ct.nparc, 24);
+    const base = new Date(ct.data+'T00:00:00');
+    for(let i=1;i<=meses;i++){
+      const d = new Date(base);
+      d.setMonth(d.getMonth()+i);
+      d.setDate(Math.min(ct.dia,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
+      const venc = d.toISOString().split('T')[0];
+      const vencDate = new Date(venc+'T00:00:00');
+      let st, dataPag=null, valorPago=null;
+      // Determinar status realista
+      if(ct.status==='Distratado') {
+        // Marcelo - poucas pagas
+        if(i<=5){st='Pago com Atraso';dataPag=addMonths(venc,0).slice(0,7)+'-'+String(ct.dia+3).padStart(2,'0').slice(-2);valorPago=ct.vparcela;}
+        else st='Pendente';
+      } else if(ct.status==='Inadimplente') {
+        // Adriano - últimas em atraso
+        if(i<=8){st='Pago';dataPag=venc;valorPago=ct.vparcela;}
+        else{st=vencDate<TODAY?'Atrasado':'Pendente';}
+      } else {
+        // Contratos ativos: parcelas passadas maiormente pagas
+        if(vencDate<TODAY){
+          const r=Math.random();
+          if(r<0.85){st='Pago';dataPag=venc;valorPago=ct.vparcela;}
+          else if(r<0.93){st='Pago com Atraso';const atrDias=Math.floor(Math.random()*20)+3;const dp=new Date(venc+'T00:00:00');dp.setDate(dp.getDate()+atrDias);dataPag=dp.toISOString().split('T')[0];const calc=calcFinanceiro(ct.vparcela,atrDias);valorPago=Math.round(calc.total*100)/100;}
+          else{st='Atrasado';}
+        } else {
+          st='Pendente';
+        }
+      }
+      await dbPut('parcelas',{contrato_id:ctId,numero:i,vencimento:venc,valor:ct.vparcela,valor_pago:valorPago,data_pagamento:dataPag,status:st,obs:''});
+    }
+  }
+  toast('Dados de exemplo carregados com sucesso!');
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init() {
+  await openDB();
+  const temDados = await hasDados();
+  if(!temDados) await carregarDadosExemplo();
+  await renderDashboard();
+  // Update badge
+  const parcelas = await dbGetAll('parcelas');
+  const atrasadas = parcelas.filter(p=>diasAtraso(p.vencimento)>0&&p.status!=='Pago'&&p.status!=='Pago com Atraso'&&p.status!=='Antecipado');
+  const badge = document.getElementById('badge-parcelas');
+  if(atrasadas.length){badge.style.display='';badge.textContent=atrasadas.length;}
+}
+
+init().catch(console.error);
+</script>
+</body>
+</html>
