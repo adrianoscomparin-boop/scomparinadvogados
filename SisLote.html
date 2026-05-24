@@ -189,7 +189,8 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
   </div>
   <div class="sidebar-footer">
-    <div class="sidebar-footer-text">SisLote v1.0 · Scomparin Adv.</div>
+    <div class="sidebar-footer-text">SisLote v2.0 · Scomparin Adv.</div>
+    <button class="btn btn-secondary btn-xs" style="width:100%;margin-top:8px;font-size:10px" onclick="reiniciarDados()">🔄 Reiniciar Dados</button>
   </div>
 </nav>
 
@@ -385,7 +386,7 @@ textarea.form-input{resize:vertical;min-height:80px}
         <div class="form-group"><label class="form-label">Comprador *</label><select class="form-input" id="f-cont-comprador"></select></div>
         <div class="form-group"><label class="form-label">Lote *</label><select class="form-input" id="f-cont-lote"></select></div>
         <div class="form-group"><label class="form-label">Data de Assinatura</label><input class="form-input" type="date" id="f-cont-data"></div>
-        <div class="form-group"><label class="form-label">Dia de Vencimento</label><input class="form-input" type="number" min="1" max="28" id="f-cont-diavenc" placeholder="Ex: 10"></div>
+        <div class="form-group"><label class="form-label">Data do Primeiro Vencimento *</label><input class="form-input" type="date" id="f-cont-primeiro-venc"></div>
         <div class="form-group"><label class="form-label">Valor Total (R$)</label><input class="form-input" type="number" step="0.01" id="f-cont-total"></div>
         <div class="form-group"><label class="form-label">Valor de Entrada (R$)</label><input class="form-input" type="number" step="0.01" id="f-cont-entrada" value="0"></div>
         <div class="form-group"><label class="form-label">Nº de Parcelas</label><input class="form-input" type="number" id="f-cont-nparc"></div>
@@ -397,7 +398,7 @@ textarea.form-input{resize:vertical;min-height:80px}
       </div>
       <div class="alert alert-info">
         <span>ℹ️</span>
-        <span>As parcelas serão geradas automaticamente ao salvar o contrato. O sistema cria os próximos <strong>24 meses</strong> de parcelas a partir da data de assinatura.</span>
+        <span>As parcelas serão geradas automaticamente ao salvar o contrato. <strong>Todas</strong> as parcelas serão criadas a partir da <strong>Data do Primeiro Vencimento</strong>, com vencimentos mensais no mesmo dia.</span>
       </div>
     </div>
     <div class="modal-footer">
@@ -420,6 +421,10 @@ textarea.form-input{resize:vertical;min-height:80px}
         <div class="form-group"><label class="form-label">Data do Pagamento *</label><input class="form-input" type="date" id="f-pag-data"></div>
         <div class="form-group"><label class="form-label">Valor Pago (R$) *</label><input class="form-input" type="number" step="0.01" id="f-pag-valor"></div>
         <div class="form-group full"><label class="form-label">Observações</label><input class="form-input" id="f-pag-obs"></div>
+        <div class="form-group full">
+          <label class="form-label">Comprovante de Pagamento (opcional)</label>
+          <input type="file" accept="image/*,.pdf" id="f-pag-comprovante" class="form-input">
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -520,6 +525,23 @@ function dbCountAll(store) {
     req.onerror = ()=>rej(req.error);
   });
 }
+function dbPutMany(store, items) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readwrite');
+    const os = tx.objectStore(store);
+    items.forEach(item=>os.put(item));
+    tx.oncomplete = ()=>res();
+    tx.onerror = ()=>rej(tx.error);
+  });
+}
+function dbClearAll(store) {
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readwrite');
+    tx.objectStore(store).clear();
+    tx.oncomplete = ()=>res();
+    tx.onerror = ()=>rej(tx.error);
+  });
+}
 
 // ═══════════════════════════════════════════════════════
 // UTILS
@@ -543,6 +565,16 @@ function isoDate(d) {
 function addMonths(dateStr, n) {
   const d = new Date(dateStr+'T00:00:00');
   d.setMonth(d.getMonth()+n);
+  return d.toISOString().split('T')[0];
+}
+function addMonthsClamped(dateStr, n) {
+  if(n===0) return dateStr;
+  const day = parseInt(dateStr.split('-')[2]);
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(1);
+  d.setMonth(d.getMonth()+n);
+  const last = new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  d.setDate(Math.min(day,last));
   return d.toISOString().split('T')[0];
 }
 function diasAtraso(vencimento) {
@@ -785,7 +817,7 @@ async function openModalContrato(id=null) {
     document.getElementById('f-cont-comprador').value=ct.comprador_id||'';
     document.getElementById('f-cont-lote').value=ct.lote_id||'';
     document.getElementById('f-cont-data').value=ct.data_assinatura||'';
-    document.getElementById('f-cont-diavenc').value=ct.dia_vencimento||10;
+    document.getElementById('f-cont-primeiro-venc').value=ct.data_primeiro_vencimento||'';
     document.getElementById('f-cont-total').value=ct.valor_total||'';
     document.getElementById('f-cont-entrada').value=ct.valor_entrada||0;
     document.getElementById('f-cont-nparc').value=ct.numero_parcelas||'';
@@ -793,9 +825,8 @@ async function openModalContrato(id=null) {
     document.getElementById('f-cont-status').value=ct.status||'Ativo';
     document.getElementById('f-cont-obs').value=ct.obs||'';
   } else {
-    ['f-cont-titulo','f-cont-data','f-cont-total','f-cont-nparc','f-cont-vparcela','f-cont-obs'].forEach(id=>document.getElementById(id).value='');
+    ['f-cont-titulo','f-cont-data','f-cont-primeiro-venc','f-cont-total','f-cont-nparc','f-cont-vparcela','f-cont-obs'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('f-cont-entrada').value='0';
-    document.getElementById('f-cont-diavenc').value='10';
     document.getElementById('f-cont-status').value='Ativo';
   }
   openModal('modal-cont');
@@ -803,45 +834,40 @@ async function openModalContrato(id=null) {
 async function saveContrato() {
   const titulo = document.getElementById('f-cont-titulo').value.trim();
   if(!titulo){toast('Informe o título do contrato','err');return;}
+  const primeiroVenc = document.getElementById('f-cont-primeiro-venc').value;
   const compId = +document.getElementById('f-cont-comprador').value||null;
   const loteId = +document.getElementById('f-cont-lote').value||null;
   const dataAss = document.getElementById('f-cont-data').value;
-  const diavenc = +document.getElementById('f-cont-diavenc').value||10;
   const total = +document.getElementById('f-cont-total').value||0;
   const entrada = +document.getElementById('f-cont-entrada').value||0;
   const nparc = +document.getElementById('f-cont-nparc').value||0;
   const vparcela = +document.getElementById('f-cont-vparcela').value||0;
   const status = document.getElementById('f-cont-status').value;
   const obs = document.getElementById('f-cont-obs').value.trim();
-  const item = {titulo,comprador_id:compId,lote_id:loteId,data_assinatura:dataAss,dia_vencimento:diavenc,valor_total:total,valor_entrada:entrada,numero_parcelas:nparc,valor_parcela:vparcela,status,obs};
+  if(!editingContId && (!primeiroVenc||!nparc||!vparcela)){toast('Informe o primeiro vencimento, nº de parcelas e valor da parcela','err');return;}
+  const item = {titulo,comprador_id:compId,lote_id:loteId,data_assinatura:dataAss,data_primeiro_vencimento:primeiroVenc,valor_total:total,valor_entrada:entrada,numero_parcelas:nparc,valor_parcela:vparcela,status,obs};
   if(editingContId) item.id = editingContId;
   const newId = await dbPut('contratos',item);
   const ctId = editingContId || newId;
-  // Update lote status to Vendido
   if(loteId) {
     const lote = await dbGet('lotes',loteId);
     if(lote && lote.status==='Disponível'){lote.status='Vendido';await dbPut('lotes',lote);}
   }
-  // Generate parcelas if new contract
-  if(!editingContId && dataAss && nparc>0 && vparcela>0) {
-    await gerarParcelas(ctId, dataAss, diavenc, vparcela, nparc);
+  if(!editingContId && primeiroVenc && nparc>0 && vparcela>0) {
+    await gerarParcelas(ctId, primeiroVenc, vparcela, nparc);
   }
   closeModal('modal-cont');
-  toast(editingContId?'Contrato atualizado':'Contrato criado e parcelas geradas!');
+  toast(editingContId?'Contrato atualizado':'Contrato criado e '+nparc+' parcelas geradas!');
   renderContratos();
 }
-async function gerarParcelas(contId, dataAss, dia, valor, nparc) {
-  const meses = Math.min(nparc, 24);
-  const base = new Date(dataAss+'T00:00:00');
-  for(let i=1;i<=meses;i++){
-    const d = new Date(base);
-    d.setMonth(d.getMonth()+i);
-    d.setDate(Math.min(dia,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
-    const venc = d.toISOString().split('T')[0];
+async function gerarParcelas(contId, primeiroVenc, valor, nparc) {
+  const items = [];
+  for(let i=0;i<nparc;i++){
+    const venc = addMonthsClamped(primeiroVenc, i);
     const dias = diasAtraso(venc);
-    let st = dias>0?'Atrasado':'Pendente';
-    await dbPut('parcelas',{contrato_id:contId,numero:i,vencimento:venc,valor,valor_pago:null,data_pagamento:null,status:st,obs:''});
+    items.push({contrato_id:contId,numero:i+1,vencimento:venc,valor,valor_pago:null,data_pagamento:null,status:dias>0?'Atrasado':'Pendente',obs:''});
   }
+  await dbPutMany('parcelas', items);
 }
 async function deleteContrato(id) {
   if(!confirm('Excluir este contrato e todas as suas parcelas?')) return;
@@ -1032,8 +1058,9 @@ async function abrirPagamento(id) {
     ${calc.honor>0?`<div class="calc-row"><span class="calc-label">Honorários Adv. (10%)</span><strong class="calc-red">+ ${fmt(calc.honor)}</strong></div>`:''}
     <div class="calc-row total"><span class="calc-label">Total a Pagar</span><strong class="calc-red">${fmt(calc.total+(calc.honor||0))}</strong></div>`:''}`;
   document.getElementById('f-pag-data').value = new Date().toISOString().split('T')[0];
-  document.getElementById('f-pag-valor').value = (dias>0?calc.total:p.valor).toFixed(2);
+  document.getElementById('f-pag-valor').value = (dias>0?(calc.total+(calc.honor||0)):p.valor).toFixed(2);
   document.getElementById('f-pag-obs').value = '';
+  document.getElementById('f-pag-comprovante').value = '';
   openModal('modal-pagamento');
 }
 async function confirmarPagamento() {
@@ -1048,8 +1075,14 @@ async function confirmarPagamento() {
   else if(pago.toDateString()===venc.toDateString()) st='Pago';
   else st='Pago com Atraso';
   p.status=st; p.data_pagamento=data; p.valor_pago=valor; p.obs=document.getElementById('f-pag-obs').value;
+  const fileInput = document.getElementById('f-pag-comprovante');
+  if(fileInput.files[0]){
+    const file = fileInput.files[0];
+    p.comprovante = await fileToBase64(file);
+    p.comprovante_nome = file.name;
+    p.comprovante_type = file.type;
+  }
   await dbPut('parcelas',p);
-  // Check if all parcelas paid → update contract
   const allParc = (await dbGetAll('parcelas')).filter(pp=>pp.contrato_id===p.contrato_id);
   const allPaid = allParc.every(pp=>pp.status==='Pago'||pp.status==='Pago com Atraso'||pp.status==='Antecipado');
   if(allPaid){
@@ -1058,7 +1091,94 @@ async function confirmarPagamento() {
   }
   closeModal('modal-pagamento');
   toast(`Parcela ${p.numero} marcada como ${st} ✓`);
+  if(confirm('Deseja gerar o recibo de pagamento?')) await gerarRecibo(p.id);
   renderParcelas();
+}
+function fileToBase64(file) {
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = e=>res(e.target.result);
+    r.onerror = ()=>rej(r.error);
+    r.readAsDataURL(file);
+  });
+}
+async function gerarRecibo(parcId) {
+  const p = await dbGet('parcelas',parcId);
+  const ct = await dbGet('contratos',p.contrato_id);
+  const compradores = await dbGetAll('compradores');
+  const lotes = await dbGetAll('lotes');
+  const comp = compradores.find(c=>c.id===ct.comprador_id);
+  const lote = lotes.find(l=>l.id===ct.lote_id);
+  const vencDate = new Date(p.vencimento+'T00:00:00');
+  const pagDate = new Date(p.data_pagamento+'T00:00:00');
+  const diasAtr = Math.max(0,Math.floor((pagDate-vencDate)/86400000));
+  const calc = calcFinanceiro(p.valor, diasAtr);
+  const emissao = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Recibo — Parcela ${p.numero}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a2836;padding:40px;max-width:760px;margin:0 auto}
+.header{text-align:center;border-bottom:3px solid #0d2137;padding-bottom:20px;margin-bottom:24px}
+.logo{font-size:22px;font-weight:800;color:#0d2137;letter-spacing:1px}
+.logo-sub{font-size:12px;color:#5a7080;margin-top:4px}
+h2{font-size:18px;color:#0d2137;margin-top:10px;letter-spacing:.5px}
+.recibo-num{font-size:12px;color:#5a7080;margin-top:4px}
+.section{margin-bottom:20px}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#5a7080;letter-spacing:1px;border-bottom:1px solid #dde3ea;padding-bottom:6px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f0f4f8}
+.row:last-child{border-bottom:none}.lbl{color:#5a7080}.val{font-weight:600}
+.encargos{background:#fff8e1;border-radius:8px;padding:12px;margin:10px 0;border:1px solid #ffe082}
+.enc-title{font-size:12px;font-weight:700;color:#7a4c00;margin-bottom:8px}
+.enc-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.total-row{display:flex;justify-content:space-between;padding:12px 0;font-size:17px;font-weight:800;border-top:2px solid #0d2137;margin-top:8px;color:#0d2137}
+.comprovante{margin:16px 0}.comprovante img{max-width:100%;border:1px solid #dde3ea;border-radius:6px}
+.assinatura{display:flex;gap:40px;margin-top:50px}
+.assin-box{flex:1;text-align:center}
+.assin-line{border-top:1px solid #333;padding-top:8px;font-size:11px;color:#5a7080}
+.footer{text-align:center;margin-top:32px;font-size:10px;color:#a0b0c0;border-top:1px solid #eee;padding-top:12px}
+.no-print{text-align:center;margin-bottom:24px;display:flex;gap:8px;justify-content:center}
+.btn-p{padding:10px 22px;background:#1e6fa8;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-c{padding:10px 22px;background:#fff;color:#1a2836;border:1.5px solid #dde3ea;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+@media print{.no-print{display:none!important}}</style></head><body>
+<div class="no-print"><button class="btn-p" onclick="window.print()">🖨️ Imprimir</button><button class="btn-c" onclick="window.close()">✕ Fechar</button></div>
+<div class="header">
+  <div class="logo">🌳 SisLote — Chácaras Alianças 1ª Etapa</div>
+  <div class="logo-sub">Sistema de Gestão de Loteamento · Scomparin Advogados</div>
+  <h2>RECIBO DE PAGAMENTO</h2>
+  <div class="recibo-num">Contrato: ${ct.titulo} &nbsp;·&nbsp; Parcela Nº ${p.numero} de ${ct.numero_parcelas}</div>
+</div>
+<div class="section">
+  <div class="sec-title">Dados do Comprador</div>
+  <div class="row"><span class="lbl">Nome</span><span class="val">${comp?.nome||'—'}</span></div>
+  ${comp?.cpf?`<div class="row"><span class="lbl">CPF</span><span class="val">${comp.cpf}</span></div>`:''}
+</div>
+<div class="section">
+  <div class="sec-title">Dados do Imóvel</div>
+  <div class="row"><span class="lbl">Lote / Chácara</span><span class="val">${lote?.nome||'—'}</span></div>
+  ${lote?.area?`<div class="row"><span class="lbl">Área</span><span class="val">${lote.area.toLocaleString('pt-BR')} m²</span></div>`:''}
+</div>
+<div class="section">
+  <div class="sec-title">Dados do Pagamento</div>
+  <div class="row"><span class="lbl">Parcela</span><span class="val">Nº ${p.numero} de ${ct.numero_parcelas}</span></div>
+  <div class="row"><span class="lbl">Data de Vencimento</span><span class="val">${fmtDate(p.vencimento)}</span></div>
+  <div class="row"><span class="lbl">Data de Pagamento</span><span class="val">${fmtDate(p.data_pagamento)}</span></div>
+  <div class="row"><span class="lbl">Valor Original da Parcela</span><span class="val">${fmt(p.valor)}</span></div>
+  ${diasAtr>0?`<div class="encargos"><div class="enc-title">⚠️ Pagamento realizado com ${diasAtr} dia(s) de atraso</div>
+  <div class="enc-row"><span>Multa (2%)</span><span style="color:#c0392b">+ ${fmt(calc.multa)}</span></div>
+  <div class="enc-row"><span>Juros de Mora (1%/mês)</span><span style="color:#e67e22">+ ${fmt(calc.juros)}</span></div>
+  ${calc.honor>0?`<div class="enc-row"><span>Honorários Advocatícios (10%)</span><span style="color:#c0392b">+ ${fmt(calc.honor)}</span></div>`:''}
+  </div>`:''}
+  <div class="total-row"><span>VALOR PAGO</span><span>${fmt(p.valor_pago)}</span></div>
+  ${p.obs?`<div class="row" style="margin-top:6px"><span class="lbl">Observações</span><span class="val">${p.obs}</span></div>`:''}
+</div>
+${p.comprovante&&p.comprovante_type?.startsWith('image/')?`<div class="comprovante"><div class="sec-title">Comprovante de Pagamento</div><img src="${p.comprovante}" alt="${p.comprovante_nome}"></div>`:''}
+<div class="assinatura">
+  <div class="assin-box"><div style="height:40px"></div><div class="assin-line">${comp?.nome||'_______________________________'}<br>Comprador(a)</div></div>
+  <div class="assin-box"><div style="height:40px"></div><div class="assin-line">Scomparin Advogados<br>Vendedora / Administradora</div></div>
+</div>
+<div class="footer">Emitido em ${emissao} · SisLote v2.0 — Chácaras Alianças 1ª Etapa</div>
+</body></html>`;
+  const w = window.open('','_blank','width=820,height=940');
+  w.document.write(html);
+  w.document.close();
 }
 async function estornarParcela(id) {
   if(!confirm('Estornar pagamento desta parcela?')) return;
@@ -1237,25 +1357,25 @@ async function carregarDadosExemplo() {
   const loteIds = [];
   for(const l of lotes) loteIds.push(await dbPut('lotes',l));
 
-  // CONTRATOS (dados reais do Notion onde disponível)
+  // CONTRATOS (dados reais do Notion — pVenc = Data do Primeiro Vencimento)
   const contratos = [
-    {titulo:'Chácara 03 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:0,data:'2024-04-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
-    {titulo:'Chácara 04 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:1,data:'2024-04-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
-    {titulo:'Chácara 05 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:2,data:'2024-05-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
-    {titulo:'Chácara 06 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:3,data:'2024-05-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
-    {titulo:'Chácara 07 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:4,data:'2024-06-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
-    {titulo:'Chácara 08 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:5,data:'2024-06-10',dia:10,total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
-    {titulo:'Chácara 09 — JESSICA VASCONCELOS KALENINSKI',compradorIdx:1,loteIdx:6,data:'2024-07-15',dia:15,total:280000,entrada:28000,nparc:180,vparcela:1400,status:'Ativo'},
-    {titulo:'Chácara 10 — JAIRO CASSIANO DA SILVA',compradorIdx:2,loteIdx:7,data:'2024-08-10',dia:10,total:249999.40,entrada:32500,nparc:180,vparcela:1208.33,status:'Ativo'},
-    {titulo:'Chácara 13 — JULIANO LUIZ DE MELLO',compradorIdx:3,loteIdx:8,data:'2024-09-05',dia:5,total:250000,entrada:25000,nparc:180,vparcela:1250,status:'Ativo'},
-    {titulo:'Chácara 14 — ETERNO BENTO TAVARES',compradorIdx:4,loteIdx:9,data:'2024-09-10',dia:10,total:260000,entrada:26000,nparc:180,vparcela:1300,status:'Ativo'},
-    {titulo:'Chácara 15 — GPF REPRESENTAÇÕES LTDA',compradorIdx:5,loteIdx:10,data:'2024-10-01',dia:1,total:290000,entrada:29000,nparc:180,vparcela:1450,status:'Ativo'},
-    {titulo:'Chácara 16 — ADRIANO SCOMPARIN',compradorIdx:6,loteIdx:11,data:'2024-06-10',dia:10,total:6666.72,entrada:0,nparc:12,vparcela:555.56,status:'Inadimplente'},
-    {titulo:'Chácara 17A — ALEXANDRE LUIZ PAVAN',compradorIdx:7,loteIdx:12,data:'2024-11-10',dia:10,total:240000,entrada:24000,nparc:180,vparcela:1200,status:'Ativo'},
-    {titulo:'Chácara 17B — ALEXANDRE LUIZ PAVAN',compradorIdx:7,loteIdx:13,data:'2024-11-10',dia:10,total:240000,entrada:24000,nparc:180,vparcela:1200,status:'Ativo'},
-    {titulo:'Chácara 23 — SUZIANE DA SILVA RODRIGUES',compradorIdx:8,loteIdx:14,data:'2024-10-20',dia:20,total:270000,entrada:27000,nparc:180,vparcela:1350,status:'Ativo'},
-    {titulo:'Chácara 27 — MARCELO JUNIOR PAGLIA',compradorIdx:9,loteIdx:15,data:'2024-08-16',dia:16,total:177000,entrada:15000,nparc:180,vparcela:900,status:'Distratado'},
-    {titulo:'Chácara 28 — EVANDRO LUIZ SCHNEIDER',compradorIdx:10,loteIdx:16,data:'2024-12-10',dia:10,total:290000,entrada:29000,nparc:180,vparcela:1450,status:'Ativo'},
+    {titulo:'Chácara 03 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:0,data:'2024-04-10',pVenc:'2024-05-10',total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 04 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:1,data:'2024-04-10',pVenc:'2024-05-10',total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 05 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:2,data:'2024-05-10',pVenc:'2024-06-10',total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 06 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:3,data:'2024-05-10',pVenc:'2024-06-10',total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 07 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:4,data:'2024-06-10',pVenc:'2024-07-10',total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 08 — RUBENILTON RIBEIRO DE OLIVEIRA',compradorIdx:0,loteIdx:5,data:'2024-06-10',pVenc:'2024-07-10',total:294568,entrada:19528,nparc:180,vparcela:1528,status:'Ativo'},
+    {titulo:'Chácara 09 — JESSICA VASCONCELOS KALENINSKI',compradorIdx:1,loteIdx:6,data:'2024-07-15',pVenc:'2024-08-15',total:280000,entrada:28000,nparc:180,vparcela:1400,status:'Ativo'},
+    {titulo:'Chácara 10 — JAIRO CASSIANO DA SILVA',compradorIdx:2,loteIdx:7,data:'2024-08-10',pVenc:'2024-09-10',total:249999.40,entrada:32500,nparc:180,vparcela:1208.33,status:'Ativo'},
+    {titulo:'Chácara 13 — JULIANO LUIZ DE MELLO',compradorIdx:3,loteIdx:8,data:'2024-09-05',pVenc:'2024-10-05',total:250000,entrada:25000,nparc:180,vparcela:1250,status:'Ativo'},
+    {titulo:'Chácara 14 — ETERNO BENTO TAVARES',compradorIdx:4,loteIdx:9,data:'2024-09-10',pVenc:'2024-10-10',total:260000,entrada:26000,nparc:180,vparcela:1300,status:'Ativo'},
+    {titulo:'Chácara 15 — GPF REPRESENTAÇÕES LTDA',compradorIdx:5,loteIdx:10,data:'2024-10-01',pVenc:'2024-11-01',total:290000,entrada:29000,nparc:180,vparcela:1450,status:'Ativo'},
+    {titulo:'Chácara 16 — ADRIANO SCOMPARIN',compradorIdx:6,loteIdx:11,data:'2024-06-10',pVenc:'2024-07-10',total:6666.72,entrada:0,nparc:12,vparcela:555.56,status:'Inadimplente'},
+    {titulo:'Chácara 17A — ALEXANDRE LUIZ PAVAN',compradorIdx:7,loteIdx:12,data:'2024-11-10',pVenc:'2024-12-10',total:240000,entrada:24000,nparc:180,vparcela:1200,status:'Ativo'},
+    {titulo:'Chácara 17B — ALEXANDRE LUIZ PAVAN',compradorIdx:7,loteIdx:13,data:'2024-11-10',pVenc:'2024-12-10',total:240000,entrada:24000,nparc:180,vparcela:1200,status:'Ativo'},
+    {titulo:'Chácara 23 — SUZIANE DA SILVA RODRIGUES',compradorIdx:8,loteIdx:14,data:'2024-10-20',pVenc:'2024-11-20',total:270000,entrada:27000,nparc:180,vparcela:1350,status:'Ativo'},
+    {titulo:'Chácara 27 — MARCELO JUNIOR PAGLIA',compradorIdx:9,loteIdx:15,data:'2024-08-16',pVenc:'2024-09-16',total:177000,entrada:15000,nparc:180,vparcela:900,status:'Distratado'},
+    {titulo:'Chácara 28 — EVANDRO LUIZ SCHNEIDER',compradorIdx:10,loteIdx:16,data:'2024-12-10',pVenc:'2025-01-10',total:290000,entrada:29000,nparc:180,vparcela:1450,status:'Ativo'},
   ];
 
   for(const ct of contratos) {
@@ -1264,7 +1384,7 @@ async function carregarDadosExemplo() {
       comprador_id:compIds[ct.compradorIdx],
       lote_id:loteIds[ct.loteIdx],
       data_assinatura:ct.data,
-      dia_vencimento:ct.dia,
+      data_primeiro_vencimento:ct.pVenc,
       valor_total:ct.total,
       valor_entrada:ct.entrada,
       numero_parcelas:ct.nparc,
@@ -1272,45 +1392,44 @@ async function carregarDadosExemplo() {
       status:ct.status,
       obs:'',
     });
-    // Gerar parcelas: 24 meses ou número total se menor
-    const meses = Math.min(ct.nparc, 24);
-    const base = new Date(ct.data+'T00:00:00');
-    for(let i=1;i<=meses;i++){
-      const d = new Date(base);
-      d.setMonth(d.getMonth()+i);
-      d.setDate(Math.min(ct.dia,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
-      const venc = d.toISOString().split('T')[0];
+    const items = [];
+    for(let i=0;i<ct.nparc;i++){
+      const venc = addMonthsClamped(ct.pVenc, i);
       const vencDate = new Date(venc+'T00:00:00');
       let st, dataPag=null, valorPago=null;
-      // Determinar status realista
-      if(ct.status==='Distratado') {
-        // Marcelo - poucas pagas
-        if(i<=5){st='Pago com Atraso';dataPag=addMonths(venc,0).slice(0,7)+'-'+String(ct.dia+3).padStart(2,'0').slice(-2);valorPago=ct.vparcela;}
-        else st='Pendente';
-      } else if(ct.status==='Inadimplente') {
-        // Adriano - últimas em atraso
-        if(i<=8){st='Pago';dataPag=venc;valorPago=ct.vparcela;}
+      if(ct.status==='Distratado'){
+        if(i<5){
+          st='Pago com Atraso';
+          const dp=new Date(venc+'T00:00:00');dp.setDate(dp.getDate()+3);
+          dataPag=dp.toISOString().split('T')[0];valorPago=ct.vparcela;
+        } else st='Pendente';
+      } else if(ct.status==='Inadimplente'){
+        if(i<8){st='Pago';dataPag=venc;valorPago=ct.vparcela;}
         else{st=vencDate<TODAY?'Atrasado':'Pendente';}
       } else {
-        // Contratos ativos: parcelas passadas maiormente pagas
         if(vencDate<TODAY){
           const r=Math.random();
           if(r<0.85){st='Pago';dataPag=venc;valorPago=ct.vparcela;}
           else if(r<0.93){st='Pago com Atraso';const atrDias=Math.floor(Math.random()*20)+3;const dp=new Date(venc+'T00:00:00');dp.setDate(dp.getDate()+atrDias);dataPag=dp.toISOString().split('T')[0];const calc=calcFinanceiro(ct.vparcela,atrDias);valorPago=Math.round(calc.total*100)/100;}
           else{st='Atrasado';}
-        } else {
-          st='Pendente';
-        }
+        } else {st='Pendente';}
       }
-      await dbPut('parcelas',{contrato_id:ctId,numero:i,vencimento:venc,valor:ct.vparcela,valor_pago:valorPago,data_pagamento:dataPag,status:st,obs:''});
+      items.push({contrato_id:ctId,numero:i+1,vencimento:venc,valor:ct.vparcela,valor_pago:valorPago,data_pagamento:dataPag,status:st,obs:''});
     }
+    await dbPutMany('parcelas', items);
   }
-  toast('Dados de exemplo carregados com sucesso!');
+  toast('Dados carregados: '+contratos.length+' contratos, '+contratos.reduce((s,c)=>s+c.nparc,0)+' parcelas!');
 }
 
 // ═══════════════════════════════════════════════════════
-// INIT
+// REINICIAR / INIT
 // ═══════════════════════════════════════════════════════
+async function reiniciarDados() {
+  if(!confirm('Isso irá apagar TODOS os dados e recarregar os dados de exemplo. Continuar?')) return;
+  for(const store of ['lotes','compradores','contratos','parcelas']) await dbClearAll(store);
+  await carregarDadosExemplo();
+  navigate('dashboard');
+}
 async function init() {
   await openDB();
   const temDados = await hasDados();
