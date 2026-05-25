@@ -179,6 +179,12 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
   </div>
   <div class="nav-section">
+    <div class="nav-label">Administração</div>
+    <div class="nav-item" id="nav-usuarios" data-section="usuarios" onclick="navigate('usuarios')" style="display:none">
+      <span class="nav-icon">👤</span> Usuários
+    </div>
+  </div>
+  <div class="nav-section">
     <div class="nav-label">Financeiro</div>
     <div class="nav-item" data-section="parcelas" onclick="navigate('parcelas')">
       <span class="nav-icon">💰</span> Parcelas
@@ -202,7 +208,11 @@ textarea.form-input{resize:vertical;min-height:80px}
       <div class="page-title" id="page-title">Dashboard</div>
       <div class="page-sub" id="page-sub">Visão geral do loteamento</div>
     </div>
-    <div class="topbar-actions" id="topbar-actions"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="topbar-actions" id="topbar-actions"></div>
+        <div id="topbar-user" style="display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px"></div>
+      </div>
+    </div>
   </div>
 
   <div class="content">
@@ -302,6 +312,16 @@ textarea.form-input{resize:vertical;min-height:80px}
         <div class="table-wrap"><table><thead><tr>
           <th>#</th><th>Contrato</th><th>Vencimento</th><th>Valor</th><th>Dias Atraso</th><th>Multa</th><th>Juros</th><th>Total Atualizado</th><th>Status</th><th></th>
         </tr></thead><tbody id="parcelas-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ===== USUÁRIOS ===== -->
+    <div id="sec-usuarios" class="section">
+      <div class="card">
+        <div class="card-header"><span class="card-title" id="usuarios-count">Usuários</span></div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th></th>
+        </tr></thead><tbody id="usuarios-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -536,6 +556,67 @@ textarea.form-input{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" style="position:fixed;inset:0;background:linear-gradient(135deg,#0d2137 0%,#1e3a5f 100%);z-index:9000;display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:18px;padding:44px 38px;width:380px;box-shadow:0 24px 80px rgba(0,0,0,.4)">
+    <div style="text-align:center;margin-bottom:30px">
+      <div style="font-size:44px">🌳</div>
+      <div style="font-size:22px;font-weight:800;color:#0d2137;margin-top:10px;letter-spacing:.5px">SisLote</div>
+      <div style="font-size:11px;color:#5a7080;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px">Chácaras Alianças · Scomparin Adv.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="form-label">Usuário</label>
+        <input class="form-input" id="login-usuario" placeholder="Digite seu usuário" autocomplete="username" style="margin-top:4px;width:100%">
+      </div>
+      <div>
+        <label class="form-label">Senha</label>
+        <input class="form-input" type="password" id="login-senha" placeholder="Digite sua senha" autocomplete="current-password" style="margin-top:4px;width:100%" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <div id="login-erro" style="color:#c0392b;font-size:12px;font-weight:600;display:none;padding:8px 12px;background:#fdecea;border-radius:6px;border:1px solid #ef9a9a"></div>
+      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:14px;margin-top:4px" onclick="fazerLogin()">Entrar →</button>
+    </div>
+    <div style="text-align:center;margin-top:22px;font-size:10px;color:#a0b0c0">Acesso restrito · SisLote v2.0</div>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="modal-overlay" id="modal-usuario" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-usuario-title">Novo Usuário</span>
+      <button class="btn-close" onclick="closeModal('modal-usuario')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Nome Completo *</label><input class="form-input" id="f-usr-nome"></div>
+        <div class="form-group"><label class="form-label">Login *</label><input class="form-input" id="f-usr-login" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Perfil</label>
+          <select class="form-input" id="f-usr-perfil">
+            <option value="usuario">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Senha *</label><input class="form-input" type="password" id="f-usr-senha" placeholder="Nova senha" autocomplete="new-password"></div>
+        <div class="form-group"><label class="form-label">Confirmar Senha</label><input class="form-input" type="password" id="f-usr-senha2" placeholder="Repita a senha" autocomplete="new-password"></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-input" id="f-usr-ativo">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="alert alert-info" id="usr-senha-hint" style="display:none;margin-top:6px">
+        <span>ℹ️</span><span>Deixe a senha em branco para manter a senha atual.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -543,7 +624,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 // ═══════════════════════════════════════════════════════
 // DATABASE (IndexedDB)
 // ═══════════════════════════════════════════════════════
-const DB_NAME = 'SisLote', DB_VER = 1;
+const DB_NAME = 'SisLote', DB_VER = 2;
 let db;
 
 function openDB() {
@@ -556,6 +637,7 @@ function openDB() {
         { name:'compradores', key:'id' },
         { name:'contratos', key:'id' },
         { name:'parcelas', key:'id' },
+        { name:'usuarios', key:'id' },
       ];
       stores.forEach(s => {
         if (!d.objectStoreNames.contains(s.name)) {
@@ -707,6 +789,7 @@ const titles = {
   contratos:['Contratos','Contratos de compra e venda'],
   parcelas:['Parcelas','Controle de pagamentos'],
   relatorio:['Relatório','Análise financeira'],
+  usuarios:['Usuários','Gerenciamento de acesso ao sistema'],
 };
 function navigate(sec) {
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -721,8 +804,8 @@ function navigate(sec) {
   if(sec==='compradores') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalComprador()">+ Novo Comprador</button>`;
   if(sec==='contratos') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalContrato()">+ Novo Contrato</button>`;
   if(sec==='parcelas') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalNovaParcela()">+ Nova Parcela</button>`;
-  // Render section
-  const renders = {dashboard:renderDashboard,lotes:renderLotes,compradores:renderCompradores,contratos:renderContratos,parcelas:renderParcelas,relatorio:renderRelatorio};
+  if(sec==='usuarios') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalUsuario()">+ Novo Usuário</button>`;
+  const renders = {dashboard:renderDashboard,lotes:renderLotes,compradores:renderCompradores,contratos:renderContratos,parcelas:renderParcelas,relatorio:renderRelatorio,usuarios:renderUsuarios};
   if(renders[sec]) renders[sec]();
 }
 
@@ -1651,24 +1734,151 @@ async function carregarDadosExemplo() {
 }
 
 // ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+async function hashSenha(senha) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(senha));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function getUsuarioLogado() {
+  try{return JSON.parse(sessionStorage.getItem('sislote_user'))||null;}catch{return null;}
+}
+async function fazerLogin() {
+  const loginVal = document.getElementById('login-usuario').value.trim();
+  const senhaVal = document.getElementById('login-senha').value;
+  const errEl = document.getElementById('login-erro');
+  errEl.style.display='none';
+  if(!loginVal||!senhaVal){errEl.textContent='⚠️ Informe usuário e senha.';errEl.style.display='';return;}
+  const hash = await hashSenha(senhaVal);
+  const usuarios = await dbGetAll('usuarios');
+  const u = usuarios.find(u=>u.login===loginVal&&u.senha_hash===hash&&u.ativo!==false);
+  if(!u){errEl.textContent='⚠️ Usuário ou senha incorretos.';errEl.style.display='';
+    document.getElementById('login-senha').value='';return;}
+  sessionStorage.setItem('sislote_user',JSON.stringify({id:u.id,nome:u.nome,login:u.login,perfil:u.perfil}));
+  document.getElementById('login-overlay').style.display='none';
+  await iniciarApp();
+}
+async function fazerLogout() {
+  if(!confirm('Deseja sair do sistema?')) return;
+  sessionStorage.removeItem('sislote_user');
+  location.reload();
+}
+async function criarUsuarioPadrao() {
+  const usuarios = await dbGetAll('usuarios');
+  if(usuarios.length===0) {
+    const hash = await hashSenha('admin123');
+    await dbPut('usuarios',{nome:'Administrador',login:'admin',senha_hash:hash,perfil:'admin',ativo:true});
+  }
+}
+async function iniciarApp() {
+  const u = getUsuarioLogado();
+  const isAdmin = u?.perfil==='admin';
+  document.getElementById('nav-usuarios').style.display = isAdmin?'':'none';
+  document.getElementById('topbar-user').innerHTML =
+    `<span style="font-size:12px;color:var(--muted)">👤 <strong>${u?.nome||''}</strong></span>
+     ${isAdmin?`<button class="btn btn-sm btn-secondary" onclick="navigate('usuarios')" title="Gerenciar usuários" style="padding:4px 8px">⚙️</button>`:''}
+     <button class="btn btn-sm btn-secondary" onclick="fazerLogout()">Sair</button>`;
+  const temDados = await hasDados();
+  if(!temDados) await carregarDadosExemplo();
+  await renderDashboard();
+  const parcelas = await dbGetAll('parcelas');
+  const atrasadas = parcelas.filter(p=>diasAtraso(p.vencimento)>0&&p.status!=='Pago'&&p.status!=='Pago com Atraso'&&p.status!=='Antecipado');
+  const badge = document.getElementById('badge-parcelas');
+  if(atrasadas.length){badge.style.display='';badge.textContent=atrasadas.length;}
+}
+
+// ═══════════════════════════════════════════════════════
+// USUÁRIOS
+// ═══════════════════════════════════════════════════════
+let editingUsrId = null;
+async function renderUsuarios() {
+  const usuarios = await dbGetAll('usuarios');
+  const me = getUsuarioLogado();
+  document.getElementById('usuarios-count').textContent=`Usuários (${usuarios.length})`;
+  const tbody = document.getElementById('usuarios-tbody');
+  if(!usuarios.length){tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">Nenhum usuário cadastrado</div></div></td></tr>`;return;}
+  tbody.innerHTML = usuarios.map(u=>`<tr>
+    <td><strong>${u.nome}</strong></td>
+    <td><code style="background:#f0f4f8;padding:2px 8px;border-radius:4px;font-size:12px">${u.login}</code></td>
+    <td>${u.perfil==='admin'?'<span class="badge badge-purple">Administrador</span>':'<span class="badge badge-blue">Usuário</span>'}</td>
+    <td>${u.ativo!==false?'<span class="badge badge-green">Ativo</span>':'<span class="badge badge-red">Inativo</span>'}</td>
+    <td class="td-actions">
+      <button class="btn btn-xs btn-secondary" onclick="openModalUsuario(${u.id})">✏️</button>
+      ${u.id!==me?.id?`<button class="btn btn-xs btn-danger" onclick="deleteUsuario(${u.id})">🗑️</button>`:`<span style="font-size:10px;color:var(--muted)">você</span>`}
+    </td>
+  </tr>`).join('');
+}
+async function openModalUsuario(id=null) {
+  editingUsrId = id;
+  document.getElementById('modal-usuario-title').textContent = id?'Editar Usuário':'Novo Usuário';
+  document.getElementById('usr-senha-hint').style.display = id?'':'none';
+  if(id) {
+    const u = await dbGet('usuarios',id);
+    document.getElementById('f-usr-nome').value=u.nome||'';
+    document.getElementById('f-usr-login').value=u.login||'';
+    document.getElementById('f-usr-perfil').value=u.perfil||'usuario';
+    document.getElementById('f-usr-ativo').value=String(u.ativo!==false);
+    document.getElementById('f-usr-senha').value='';
+    document.getElementById('f-usr-senha2').value='';
+  } else {
+    ['f-usr-nome','f-usr-login','f-usr-senha','f-usr-senha2'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('f-usr-perfil').value='usuario';
+    document.getElementById('f-usr-ativo').value='true';
+  }
+  openModal('modal-usuario');
+}
+async function saveUsuario() {
+  const nome = document.getElementById('f-usr-nome').value.trim();
+  const login = document.getElementById('f-usr-login').value.trim();
+  const perfil = document.getElementById('f-usr-perfil').value;
+  const ativo = document.getElementById('f-usr-ativo').value==='true';
+  const senha = document.getElementById('f-usr-senha').value;
+  const senha2 = document.getElementById('f-usr-senha2').value;
+  if(!nome||!login){toast('Informe nome e login','err');return;}
+  if(!editingUsrId&&!senha){toast('Informe a senha para o novo usuário','err');return;}
+  if(senha&&senha!==senha2){toast('As senhas não conferem','err');return;}
+  if(senha&&senha.length<4){toast('A senha deve ter pelo menos 4 caracteres','err');return;}
+  const todos = await dbGetAll('usuarios');
+  if(todos.some(u=>u.login===login&&u.id!==editingUsrId)){toast('Já existe um usuário com este login','err');return;}
+  const item = {nome,login,perfil,ativo};
+  if(editingUsrId) {
+    const atual = await dbGet('usuarios',editingUsrId);
+    item.id = editingUsrId;
+    item.senha_hash = senha ? await hashSenha(senha) : atual.senha_hash;
+  } else {
+    item.senha_hash = await hashSenha(senha);
+  }
+  await dbPut('usuarios',item);
+  closeModal('modal-usuario');
+  toast(editingUsrId?'Usuário atualizado!':'Usuário criado com sucesso!');
+  renderUsuarios();
+}
+async function deleteUsuario(id) {
+  const u = await dbGet('usuarios',id);
+  if(!confirm(`Excluir usuário "${u.nome}"?`)) return;
+  await dbDelete('usuarios',id);
+  toast('Usuário excluído','info');
+  renderUsuarios();
+}
+
+// ═══════════════════════════════════════════════════════
 // REINICIAR / INIT
 // ═══════════════════════════════════════════════════════
 async function reiniciarDados() {
-  if(!confirm('Isso irá apagar TODOS os dados e recarregar os dados de exemplo. Continuar?')) return;
+  if(!confirm('Isso irá apagar TODOS os dados de loteamento e recarregar os dados de exemplo. Usuários não serão afetados. Continuar?')) return;
   for(const store of ['lotes','compradores','contratos','parcelas']) await dbClearAll(store);
   await carregarDadosExemplo();
   navigate('dashboard');
 }
 async function init() {
   await openDB();
-  const temDados = await hasDados();
-  if(!temDados) await carregarDadosExemplo();
-  await renderDashboard();
-  // Update badge
-  const parcelas = await dbGetAll('parcelas');
-  const atrasadas = parcelas.filter(p=>diasAtraso(p.vencimento)>0&&p.status!=='Pago'&&p.status!=='Pago com Atraso'&&p.status!=='Antecipado');
-  const badge = document.getElementById('badge-parcelas');
-  if(atrasadas.length){badge.style.display='';badge.textContent=atrasadas.length;}
+  await criarUsuarioPadrao();
+  const u = getUsuarioLogado();
+  if(u) {
+    await iniciarApp();
+  } else {
+    document.getElementById('login-overlay').style.display='flex';
+  }
 }
 
 init().catch(console.error);
