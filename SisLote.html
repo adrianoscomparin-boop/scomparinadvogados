@@ -445,6 +445,39 @@ textarea.form-input{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- MODAL NOVA PARCELA -->
+<div class="modal-overlay" id="modal-nova-parcela" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">Nova Parcela</span>
+      <button class="btn-close" onclick="closeModal('modal-nova-parcela')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Contrato *</label>
+          <select class="form-input" id="f-np-contrato" onchange="onNpContratoChange()"></select>
+        </div>
+        <div class="form-group"><label class="form-label">Nº da Parcela *</label>
+          <input class="form-input" type="number" min="1" id="f-np-numero" placeholder="Ex: 181">
+        </div>
+        <div class="form-group"><label class="form-label">Data de Vencimento *</label>
+          <input class="form-input" type="date" id="f-np-vencimento">
+        </div>
+        <div class="form-group"><label class="form-label">Valor (R$) *</label>
+          <input class="form-input" type="number" step="0.01" id="f-np-valor">
+        </div>
+        <div class="form-group full"><label class="form-label">Observações</label>
+          <input class="form-input" id="f-np-obs" placeholder="Ex: Parcela renegociada">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-nova-parcela')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNovaParcela()">Incluir Parcela</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -629,6 +662,7 @@ function navigate(sec) {
   if(sec==='lotes') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalLote()">+ Novo Lote</button>`;
   if(sec==='compradores') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalComprador()">+ Novo Comprador</button>`;
   if(sec==='contratos') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalContrato()">+ Novo Contrato</button>`;
+  if(sec==='parcelas') actions.innerHTML=`<button class="btn btn-primary" onclick="openModalNovaParcela()">+ Nova Parcela</button>`;
   // Render section
   const renders = {dashboard:renderDashboard,lotes:renderLotes,compradores:renderCompradores,contratos:renderContratos,parcelas:renderParcelas,relatorio:renderRelatorio};
   if(renders[sec]) renders[sec]();
@@ -955,7 +989,10 @@ async function verContrato(id) {
         <td>${fmtDate(p.data_pagamento)}</td>
         <td>${p.valor_pago?fmt(p.valor_pago):'—'}</td>
         <td>${badgeStatus(st)}</td>
-        <td>${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id});closeModal('modal-ver-contrato')">💳 Pagar</button>`:''}</td>
+        <td class="td-actions">
+          ${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id});closeModal('modal-ver-contrato')">💳 Pagar</button>`:''}
+          <button class="btn btn-xs btn-danger" onclick="deleteParcela(${p.id});closeModal('modal-ver-contrato');verContrato(${id})" title="Excluir">🗑️</button>
+        </td>
       </tr>`;
     }).join('')}
     </tbody></table></div>`;
@@ -1030,6 +1067,7 @@ async function renderParcelas() {
       <td class="td-actions">
         ${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id})">💳</button>`:''}
         ${(st==='Pago'||st==='Pago com Atraso'||st==='Antecipado')?`<button class="btn btn-xs btn-secondary" onclick="estornarParcela(${p.id})" title="Estornar">↩️</button>`:''}
+        <button class="btn btn-xs btn-danger" onclick="deleteParcela(${p.id})" title="Excluir parcela">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -1092,6 +1130,55 @@ async function confirmarPagamento() {
   closeModal('modal-pagamento');
   toast(`Parcela ${p.numero} marcada como ${st} ✓`);
   if(confirm('Deseja gerar o recibo de pagamento?')) await gerarRecibo(p.id);
+  renderParcelas();
+}
+async function deleteParcela(id) {
+  if(!confirm('Excluir esta parcela?')) return;
+  await dbDelete('parcelas',id);
+  toast('Parcela excluída','info');
+  renderParcelas();
+}
+let editingNovaParcContId = null;
+async function openModalNovaParcela(contId=null) {
+  editingNovaParcContId = contId;
+  const contratos = await dbGetAll('contratos');
+  const sel = document.getElementById('f-np-contrato');
+  sel.innerHTML = contratos.map(ct=>`<option value="${ct.id}">${ct.titulo}</option>`).join('');
+  if(contId) sel.value = contId;
+  // Suggest next numero
+  const parcelas = await dbGetAll('parcelas');
+  const ctId = +sel.value||null;
+  const maxNum = ctId ? Math.max(0,...parcelas.filter(p=>p.contrato_id===ctId).map(p=>p.numero)) : 0;
+  document.getElementById('f-np-numero').value = maxNum+1;
+  document.getElementById('f-np-vencimento').value = '';
+  document.getElementById('f-np-valor').value = ctId ? (contratos.find(c=>c.id===ctId)?.valor_parcela||'') : '';
+  document.getElementById('f-np-obs').value = '';
+  openModal('modal-nova-parcela');
+}
+async function onNpContratoChange() {
+  const contratos = await dbGetAll('contratos');
+  const parcelas = await dbGetAll('parcelas');
+  const ctId = +document.getElementById('f-np-contrato').value||null;
+  const maxNum = ctId ? Math.max(0,...parcelas.filter(p=>p.contrato_id===ctId).map(p=>p.numero)) : 0;
+  document.getElementById('f-np-numero').value = maxNum+1;
+  const ct = contratos.find(c=>c.id===ctId);
+  if(ct) document.getElementById('f-np-valor').value = ct.valor_parcela||'';
+}
+async function saveNovaParcela() {
+  const ctId = +document.getElementById('f-np-contrato').value||null;
+  const numero = +document.getElementById('f-np-numero').value||null;
+  const vencimento = document.getElementById('f-np-vencimento').value;
+  const valor = +document.getElementById('f-np-valor').value||null;
+  if(!ctId||!numero||!vencimento||!valor){toast('Preencha todos os campos obrigatórios','err');return;}
+  const dias = diasAtraso(vencimento);
+  await dbPut('parcelas',{
+    contrato_id:ctId,numero,vencimento,valor,
+    valor_pago:null,data_pagamento:null,
+    status:dias>0?'Atrasado':'Pendente',
+    obs:document.getElementById('f-np-obs').value.trim(),
+  });
+  closeModal('modal-nova-parcela');
+  toast('Parcela incluída com sucesso!');
   renderParcelas();
 }
 function fileToBase64(file) {
