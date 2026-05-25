@@ -285,6 +285,11 @@ textarea.form-input{resize:vertical;min-height:80px}
           <option value="">Todos os status</option>
           <option>Pendente</option><option>Atrasado</option><option>Pago</option><option>Pago com Atraso</option><option>Antecipado</option>
         </select>
+        <select class="filter-input" id="parc-tipo" onchange="renderParcelas()">
+          <option value="">Parcelas e Entradas</option>
+          <option value="Parcela">Somente Parcelas</option>
+          <option value="Entrada">Somente Entradas</option>
+        </select>
         <input class="filter-input" id="parc-search" placeholder="🔍 Buscar..." oninput="renderParcelas()">
       </div>
       <div class="card" style="margin-bottom:14px" id="parc-summary-card" style="display:none">
@@ -442,6 +447,59 @@ textarea.form-input{resize:vertical;min-height:80px}
       <button class="btn-close" onclick="closeModal('modal-ver-contrato')">✕</button>
     </div>
     <div class="modal-body" id="modal-ver-body"></div>
+  </div>
+</div>
+
+<!-- MODAL LANÇAR ENTRADA -->
+<div class="modal-overlay" id="modal-entrada" style="display:none">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <span class="modal-title">💵 Lançar Entrada</span>
+      <button class="btn-close" onclick="closeModal('modal-entrada')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Contrato *</label>
+          <select class="form-input" id="f-ent-contrato" onchange="onEntContratoChange()"></select>
+        </div>
+        <div class="form-group full"><label class="form-label">Modalidade *</label>
+          <select class="form-input" id="f-ent-modo" onchange="toggleEntradaModo()">
+            <option value="vista">À Vista (pagamento único)</option>
+            <option value="parcelada">Parcelada</option>
+          </select>
+        </div>
+      </div>
+      <!-- À Vista -->
+      <div id="ent-vista-fields" class="form-grid">
+        <div class="form-group"><label class="form-label">Data de Vencimento *</label>
+          <input class="form-input" type="date" id="f-ent-data">
+        </div>
+        <div class="form-group"><label class="form-label">Valor (R$) *</label>
+          <input class="form-input" type="number" step="0.01" id="f-ent-valor">
+        </div>
+      </div>
+      <!-- Parcelada -->
+      <div id="ent-parc-fields" class="form-grid" style="display:none">
+        <div class="form-group"><label class="form-label">Nº de Parcelas *</label>
+          <input class="form-input" type="number" min="1" id="f-ent-nparc" placeholder="Ex: 3">
+        </div>
+        <div class="form-group"><label class="form-label">Data do 1º Vencimento *</label>
+          <input class="form-input" type="date" id="f-ent-primeiro-venc">
+        </div>
+        <div class="form-group full"><label class="form-label">Valor por Parcela (R$) *</label>
+          <input class="form-input" type="number" step="0.01" id="f-ent-vparcela">
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:4px">
+        <div class="form-group full"><label class="form-label">Observações</label>
+          <input class="form-input" id="f-ent-obs" placeholder="Ex: Entrada inicial do contrato">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-entrada')">Cancelar</button>
+      <button class="btn btn-success" onclick="saveEntrada()">💵 Lançar Entrada</button>
+    </div>
   </div>
 </div>
 
@@ -942,6 +1000,7 @@ async function renderContratos() {
       <td>${badgeStatus(ct.status)}</td>
       <td class="td-actions">
         <button class="btn btn-xs btn-primary" onclick="verContrato(${ct.id})" title="Ver parcelas">📋</button>
+        <button class="btn btn-xs btn-success" onclick="openModalEntrada(${ct.id})" title="Lançar Entrada">💵</button>
         <button class="btn btn-xs btn-secondary" onclick="openModalContrato(${ct.id})">✏️</button>
         <button class="btn btn-xs btn-danger" onclick="deleteContrato(${ct.id})">🗑️</button>
       </td>
@@ -952,17 +1011,42 @@ async function verContrato(id) {
   const ct = await dbGet('contratos',id);
   const compradores = await dbGetAll('compradores');
   const lotes = await dbGetAll('lotes');
-  const parcelas = (await dbGetAll('parcelas')).filter(p=>p.contrato_id===id).sort((a,b)=>a.numero-b.numero);
+  const todasParcelas = (await dbGetAll('parcelas')).filter(p=>p.contrato_id===id).sort((a,b)=>a.numero-b.numero);
+  const entradas = todasParcelas.filter(p=>p.tipo==='Entrada');
+  const parcelas = todasParcelas.filter(p=>p.tipo!=='Entrada');
   const comp = compradores.find(c=>c.id===ct.comprador_id);
   const lote = lotes.find(l=>l.id===ct.lote_id);
-  const pagas = parcelas.filter(p=>p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado');
-  const atrasadas = parcelas.filter(p=>statusParcela(p)==='Atrasado');
+  const isPago = p=>p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado';
+  const pagas = todasParcelas.filter(isPago);
+  const atrasadas = todasParcelas.filter(p=>statusParcela(p)==='Atrasado');
   const totalRecebido = pagas.reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
-  const totalAtraso = atrasadas.reduce((p,parc)=>{
-    const dias = diasAtraso(parc.vencimento);
-    const calc = calcFinanceiro(parc.valor,dias);
-    return p+calc.total;
-  },0);
+  const totalEntradaRecebida = entradas.filter(isPago).reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  const totalAtraso = atrasadas.reduce((s,parc)=>{const dias=diasAtraso(parc.vencimento);return s+calcFinanceiro(parc.valor,dias).total;},0);
+
+  function rowParcela(p, ctxId) {
+    const st = statusParcela(p);
+    const dias = (st==='Pago'||st==='Antecipado')?0:diasAtraso(p.vencimento);
+    const calc = calcFinanceiro(p.valor,dias);
+    return `<tr${p.tipo==='Entrada'?' style="background:#faf5ff"':''}>
+      <td>${p.tipo==='Entrada'?`<span class="badge badge-purple" style="font-size:9px">${p.obs||'Entrada'}</span>`:p.numero}</td>
+      <td>${fmtDate(p.vencimento)}</td>
+      <td>${fmt(p.valor)}</td>
+      <td>${dias>0?`<span style="color:var(--red);font-weight:700">${dias}d</span>`:'—'}</td>
+      <td>${dias>0?`<strong style="color:var(--red)">${fmt(calc.total)}</strong>`:fmt(p.valor)}</td>
+      <td>${fmtDate(p.data_pagamento)}</td>
+      <td>${p.valor_pago?fmt(p.valor_pago):'—'}</td>
+      <td>${badgeStatus(st)}</td>
+      <td class="td-actions">
+        ${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id});closeModal('modal-ver-contrato')">💳 Pagar</button>`:''}
+        <button class="btn btn-xs btn-danger" onclick="deleteParcela(${p.id});closeModal('modal-ver-contrato');verContrato(${ctxId})" title="Excluir">🗑️</button>
+      </td>
+    </tr>`;
+  }
+
+  const tabelaHeader = `<div class="table-wrap"><table><thead><tr>
+    <th>#</th><th>Vencimento</th><th>Valor</th><th>Dias Atraso</th><th>Total Atualizado</th><th>Pago em</th><th>Valor Pago</th><th>Status</th><th></th>
+  </tr></thead><tbody>`;
+
   document.getElementById('modal-ver-title').textContent = ct.titulo;
   document.getElementById('modal-ver-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
@@ -973,29 +1057,14 @@ async function verContrato(id) {
       <div class="stat-card" style="padding:12px"><div class="stat-label">Total Recebido</div><div style="font-size:16px;font-weight:800;margin-top:4px;color:var(--green)">${fmt(totalRecebido)}</div></div>
       <div class="stat-card" style="padding:12px"><div class="stat-label">Em Atraso (Atualizado)</div><div style="font-size:16px;font-weight:800;margin-top:4px;color:${atrasadas.length?'var(--red)':'var(--green)'}">${atrasadas.length?fmt(totalAtraso):'R$ 0,00'}</div></div>
     </div>
-    <div class="table-wrap"><table><thead><tr>
-      <th>#</th><th>Vencimento</th><th>Valor</th><th>Dias Atraso</th><th>Total Atualizado</th><th>Pago em</th><th>Valor Pago</th><th>Status</th><th></th>
-    </tr></thead><tbody>
-    ${parcelas.map(p=>{
-      const st = statusParcela(p);
-      const dias = (st==='Pago'||st==='Antecipado')?0:diasAtraso(p.vencimento);
-      const calc = calcFinanceiro(p.valor,dias);
-      return `<tr>
-        <td>${p.numero}</td>
-        <td>${fmtDate(p.vencimento)}</td>
-        <td>${fmt(p.valor)}</td>
-        <td>${dias>0?`<span style="color:var(--red);font-weight:700">${dias}d</span>`:'—'}</td>
-        <td>${dias>0?`<strong style="color:var(--red)">${fmt(calc.total)}</strong>`:fmt(p.valor)}</td>
-        <td>${fmtDate(p.data_pagamento)}</td>
-        <td>${p.valor_pago?fmt(p.valor_pago):'—'}</td>
-        <td>${badgeStatus(st)}</td>
-        <td class="td-actions">
-          ${(st==='Pendente'||st==='Atrasado')?`<button class="btn btn-xs btn-success" onclick="abrirPagamento(${p.id});closeModal('modal-ver-contrato')">💳 Pagar</button>`:''}
-          <button class="btn btn-xs btn-danger" onclick="deleteParcela(${p.id});closeModal('modal-ver-contrato');verContrato(${id})" title="Excluir">🗑️</button>
-        </td>
-      </tr>`;
-    }).join('')}
-    </tbody></table></div>`;
+    ${entradas.length?`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <strong style="font-size:13px">💵 Entrada${entradas.length>1?' Parcelada':''}</strong>
+      <span style="font-size:12px;color:var(--muted)">Recebido: <strong style="color:var(--green)">${fmt(totalEntradaRecebida)}</strong> de <strong>${fmt(entradas.reduce((s,p)=>s+p.valor,0))}</strong></span>
+    </div>
+    ${tabelaHeader}${entradas.map(p=>rowParcela(p,id)).join('')}</tbody></table></div>
+    <div style="margin-top:16px;margin-bottom:8px"><strong style="font-size:13px">📋 Parcelas (${parcelas.length})</strong></div>`:''}
+    ${tabelaHeader}${parcelas.map(p=>rowParcela(p,id)).join('')}</tbody></table></div>`;
   openModal('modal-ver-contrato');
 }
 
@@ -1018,12 +1087,14 @@ async function renderParcelas() {
   sel.value = curVal;
   const filtCont = +sel.value||null;
   const filtStatus = document.getElementById('parc-status').value;
+  const filtTipo = document.getElementById('parc-tipo').value;
   const search = document.getElementById('parc-search').value.toLowerCase();
   let rows = parcelas.map(p=>({...p,_status:statusParcela(p)})).filter(p=>{
     const ok1 = !filtCont||p.contrato_id===filtCont;
     const ok2 = !filtStatus||p._status===filtStatus;
     const ok3 = !search||(contMap[p.contrato_id]||'').toLowerCase().includes(search)||String(p.numero).includes(search);
-    return ok1&&ok2&&ok3;
+    const ok4 = !filtTipo||(filtTipo==='Parcela'?(p.tipo!=='Entrada'):(p.tipo===filtTipo));
+    return ok1&&ok2&&ok3&&ok4;
   }).sort((a,b)=>{
     // Atrasadas primeiro, depois por vencimento
     const order={Atrasado:0,Pendente:1,Pago:2,'Pago com Atraso':3,Antecipado:4};
@@ -1055,7 +1126,7 @@ async function renderParcelas() {
     const dias = (st==='Pago'||st==='Antecipado')?0:diasAtraso(p.vencimento);
     const calc = calcFinanceiro(p.valor,dias);
     return `<tr>
-      <td><small style="color:var(--muted)">#${p.numero}</small></td>
+      <td><small style="color:var(--muted)">#${p.numero}</small>${p.tipo==='Entrada'?` <span class="badge badge-purple" style="font-size:9px;padding:2px 6px">Entrada</span>`:''}</td>
       <td style="white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${contMap[p.contrato_id]||''}"><small>${contMap[p.contrato_id]||'—'}</small></td>
       <td style="white-space:nowrap">${fmtDate(p.vencimento)}</td>
       <td>${fmt(p.valor)}</td>
@@ -1130,6 +1201,66 @@ async function confirmarPagamento() {
   closeModal('modal-pagamento');
   toast(`Parcela ${p.numero} marcada como ${st} ✓`);
   if(confirm('Deseja gerar o recibo de pagamento?')) await gerarRecibo(p.id);
+  renderParcelas();
+}
+// ═══════════════════════════════════════════════════════
+// ENTRADA
+// ═══════════════════════════════════════════════════════
+async function openModalEntrada(ctId=null) {
+  const contratos = await dbGetAll('contratos');
+  const sel = document.getElementById('f-ent-contrato');
+  sel.innerHTML = contratos.map(ct=>`<option value="${ct.id}">${ct.titulo}</option>`).join('');
+  if(ctId) sel.value = ctId;
+  document.getElementById('f-ent-modo').value = 'vista';
+  toggleEntradaModo();
+  const ct = contratos.find(c=>c.id===(ctId||+sel.value));
+  document.getElementById('f-ent-valor').value = ct?.valor_entrada||'';
+  document.getElementById('f-ent-vparcela').value = '';
+  document.getElementById('f-ent-nparc').value = '';
+  document.getElementById('f-ent-data').value = ct?.data_assinatura||'';
+  document.getElementById('f-ent-primeiro-venc').value = '';
+  document.getElementById('f-ent-obs').value = 'Entrada';
+  openModal('modal-entrada');
+}
+function toggleEntradaModo() {
+  const v = document.getElementById('f-ent-modo').value === 'vista';
+  document.getElementById('ent-vista-fields').style.display = v ? '' : 'none';
+  document.getElementById('ent-parc-fields').style.display = v ? 'none' : '';
+}
+async function onEntContratoChange() {
+  const contratos = await dbGetAll('contratos');
+  const ctId = +document.getElementById('f-ent-contrato').value;
+  const ct = contratos.find(c=>c.id===ctId);
+  if(ct) document.getElementById('f-ent-valor').value = ct.valor_entrada||'';
+}
+async function saveEntrada() {
+  const ctId = +document.getElementById('f-ent-contrato').value||null;
+  const modo = document.getElementById('f-ent-modo').value;
+  const obs = document.getElementById('f-ent-obs').value.trim()||'Entrada';
+  if(!ctId){toast('Selecione o contrato','err');return;}
+  if(modo==='vista'){
+    const vencimento = document.getElementById('f-ent-data').value;
+    const valor = +document.getElementById('f-ent-valor').value||0;
+    if(!vencimento||!valor){toast('Informe data e valor da entrada','err');return;}
+    const dias = diasAtraso(vencimento);
+    await dbPut('parcelas',{contrato_id:ctId,numero:0,tipo:'Entrada',vencimento,valor,valor_pago:null,data_pagamento:null,status:dias>0?'Atrasado':'Pendente',obs});
+    toast('Entrada à vista lançada!');
+  } else {
+    const nparc = +document.getElementById('f-ent-nparc').value||0;
+    const pVenc = document.getElementById('f-ent-primeiro-venc').value;
+    const vp = +document.getElementById('f-ent-vparcela').value||0;
+    if(!nparc||!pVenc||!vp){toast('Informe nº de parcelas, primeiro vencimento e valor','err');return;}
+    const items = [];
+    for(let i=0;i<nparc;i++){
+      const venc = addMonthsClamped(pVenc, i);
+      const dias = diasAtraso(venc);
+      const label = nparc>1?`${obs} ${i+1}/${nparc}`:obs;
+      items.push({contrato_id:ctId,numero:i,tipo:'Entrada',vencimento:venc,valor:vp,valor_pago:null,data_pagamento:null,status:dias>0?'Atrasado':'Pendente',obs:label});
+    }
+    await dbPutMany('parcelas',items);
+    toast(`Entrada parcelada: ${nparc}x ${fmt(vp)} lançada!`);
+  }
+  closeModal('modal-entrada');
   renderParcelas();
 }
 async function deleteParcela(id) {
@@ -1230,7 +1361,7 @@ h2{font-size:18px;color:#0d2137;margin-top:10px;letter-spacing:.5px}
   <div class="logo">🌳 SisLote — Chácaras Alianças 1ª Etapa</div>
   <div class="logo-sub">Sistema de Gestão de Loteamento · Scomparin Advogados</div>
   <h2>RECIBO DE PAGAMENTO</h2>
-  <div class="recibo-num">Contrato: ${ct.titulo} &nbsp;·&nbsp; Parcela Nº ${p.numero} de ${ct.numero_parcelas}</div>
+  <div class="recibo-num">Contrato: ${ct.titulo} &nbsp;·&nbsp; ${p.tipo==='Entrada'?(p.obs||'Entrada'):`Parcela Nº ${p.numero} de ${ct.numero_parcelas}`}</div>
 </div>
 <div class="section">
   <div class="sec-title">Dados do Comprador</div>
@@ -1244,7 +1375,7 @@ h2{font-size:18px;color:#0d2137;margin-top:10px;letter-spacing:.5px}
 </div>
 <div class="section">
   <div class="sec-title">Dados do Pagamento</div>
-  <div class="row"><span class="lbl">Parcela</span><span class="val">Nº ${p.numero} de ${ct.numero_parcelas}</span></div>
+  <div class="row"><span class="lbl">${p.tipo==='Entrada'?'Tipo':'Parcela'}</span><span class="val">${p.tipo==='Entrada'?(p.obs||'Entrada'):`Nº ${p.numero} de ${ct.numero_parcelas}`}</span></div>
   <div class="row"><span class="lbl">Data de Vencimento</span><span class="val">${fmtDate(p.vencimento)}</span></div>
   <div class="row"><span class="lbl">Data de Pagamento</span><span class="val">${fmtDate(p.data_pagamento)}</span></div>
   <div class="row"><span class="lbl">Valor Original da Parcela</span><span class="val">${fmt(p.valor)}</span></div>
@@ -1339,15 +1470,21 @@ async function renderRelatorio() {
   const contratos = await dbGetAll('contratos');
   const parcelas = await dbGetAll('parcelas');
   const ctMap = Object.fromEntries(contratos.map(c=>[c.id,c]));
+  const isPagoP = p=>p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado';
+  const soParc = parcelas.filter(p=>p.tipo!=='Entrada');
+  const soEnt  = parcelas.filter(p=>p.tipo==='Entrada');
   const atrasadas = parcelas.filter(p=>statusParcela(p)==='Atrasado');
   const totalEmAtraso = atrasadas.reduce((s,p)=>{const d=diasAtraso(p.vencimento);return s+calcFinanceiro(p.valor,d).total;},0);
-  const totalRecebido = parcelas.filter(p=>p.status==='Pago'||p.status==='Pago com Atraso'||p.status==='Antecipado').reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
-  const totalPrevisto = parcelas.filter(p=>p.status!=='Pago'&&p.status!=='Pago com Atraso'&&p.status!=='Antecipado').reduce((s,p)=>s+p.valor,0);
+  const totalRecebido = soParc.filter(isPagoP).reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  const totalEntradaRecebida = soEnt.filter(isPagoP).reduce((s,p)=>s+(p.valor_pago||p.valor||0),0);
+  const totalEntradaPrevista = soEnt.filter(p=>!isPagoP(p)).reduce((s,p)=>s+p.valor,0);
+  const totalPrevisto = soParc.filter(p=>!isPagoP(p)).reduce((s,p)=>s+p.valor,0);
   const totalContratos = contratos.reduce((s,c)=>s+(c.valor_total||0),0);
   document.getElementById('rel-stats').innerHTML=`
     <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label">Valor Total Contratos</div><div class="stat-value" style="font-size:18px">${fmt(totalContratos)}</div></div>
-    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Total Recebido</div><div class="stat-value" style="font-size:18px;color:var(--green)">${fmt(totalRecebido)}</div></div>
-    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">A Receber (Futuro)</div><div class="stat-value" style="font-size:18px;color:var(--blue)">${fmt(totalPrevisto)}</div></div>
+    <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Entradas Recebidas</div><div class="stat-value" style="font-size:18px;color:#7b1fa2">${fmt(totalEntradaRecebida)}</div><div class="stat-detail">${soEnt.filter(isPagoP).length} lançamento(s) · ${fmt(totalEntradaPrevista)} a receber</div></div>
+    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Parcelas Recebidas</div><div class="stat-value" style="font-size:18px;color:var(--green)">${fmt(totalRecebido)}</div></div>
+    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Parcelas a Receber</div><div class="stat-value" style="font-size:18px;color:var(--blue)">${fmt(totalPrevisto)}</div></div>
     <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Em Atraso (c/ encargos)</div><div class="stat-value" style="font-size:18px;color:var(--red)">${fmt(totalEmAtraso)}</div></div>`;
   // Inadimplentes
   const inadMap = {};
@@ -1366,25 +1503,30 @@ async function renderRelatorio() {
     <div style="font-weight:700;font-size:13px;margin-bottom:4px">${i.ct.titulo}</div>
     <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--muted)">${i.parcelas.length} parcela(s) em atraso</span><strong style="color:var(--red)">${fmt(i.total)}</strong></div>
   </div>`).join('')}</div>`;
-  // Receita por mês
-  const receitaMap = {};
+  // Receita por mês (parcelas + entradas separadas)
+  const receitaParc = {}, receitaEnt = {};
   parcelas.filter(p=>p.data_pagamento).forEach(p=>{
     const mes = p.data_pagamento.slice(0,7);
-    receitaMap[mes] = (receitaMap[mes]||0)+(p.valor_pago||p.valor||0);
+    if(p.tipo==='Entrada'){receitaEnt[mes]=(receitaEnt[mes]||0)+(p.valor_pago||p.valor||0);}
+    else{receitaParc[mes]=(receitaParc[mes]||0)+(p.valor_pago||p.valor||0);}
   });
-  const meses = Object.entries(receitaMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12);
+  const todosMeses = [...new Set([...Object.keys(receitaParc),...Object.keys(receitaEnt)])].sort((a,b)=>b.localeCompare(a)).slice(0,12);
   const recEl = document.getElementById('rel-receita');
-  if(!meses.length) recEl.innerHTML=`<div class="alert alert-info">Nenhum pagamento registrado ainda.</div>`;
+  if(!todosMeses.length) recEl.innerHTML=`<div class="alert alert-info">Nenhum pagamento registrado ainda.</div>`;
   else {
-    const max = Math.max(...meses.map(m=>m[1]));
-    recEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px">${meses.map(([m,v])=>{
+    const maxV = Math.max(...todosMeses.map(m=>(receitaParc[m]||0)+(receitaEnt[m]||0)));
+    recEl.innerHTML=`<div style="margin-bottom:8px;font-size:11px;color:var(--muted)"><span style="display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:2px;margin-right:4px"></span>Parcelas &nbsp;<span style="display:inline-block;width:10px;height:10px;background:#7b1fa2;border-radius:2px;margin-right:4px"></span>Entradas</div>
+    <div style="display:flex;flex-direction:column;gap:6px">${todosMeses.map(m=>{
       const [y,mo]=m.split('-');
-      const label=`${mo}/${y}`;
-      const pct=Math.round(v/max*100);
+      const vParc=receitaParc[m]||0, vEnt=receitaEnt[m]||0, vTot=vParc+vEnt;
+      const pctParc=Math.round(vParc/maxV*100), pctEnt=Math.round(vEnt/maxV*100);
       return `<div style="display:flex;align-items:center;gap:8px">
-        <span style="min-width:55px;font-size:12px;font-weight:600;color:var(--muted)">${label}</span>
-        <div style="flex:1;height:18px;background:#f0f4f8;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px"></div></div>
-        <span style="font-size:12px;font-weight:700;min-width:100px;text-align:right">${fmt(v)}</span>
+        <span style="min-width:55px;font-size:12px;font-weight:600;color:var(--muted)">${mo}/${y}</span>
+        <div style="flex:1;height:18px;background:#f0f4f8;border-radius:4px;overflow:hidden;display:flex">
+          <div style="width:${pctParc}%;height:100%;background:var(--accent)"></div>
+          <div style="width:${pctEnt}%;height:100%;background:#7b1fa2"></div>
+        </div>
+        <span style="font-size:12px;font-weight:700;min-width:110px;text-align:right">${fmt(vTot)}${vEnt>0?`<br><small style="color:#7b1fa2;font-weight:600">💵 ${fmt(vEnt)}</small>`:''}</span>
       </div>`;
     }).join('')}</div>`;
   }
