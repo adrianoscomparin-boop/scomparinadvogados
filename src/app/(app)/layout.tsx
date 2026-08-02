@@ -49,12 +49,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </header>
       <div className="flex flex-1">
         <aside className="hidden w-56 shrink-0 border-r border-[var(--border)] bg-white sm:block">
-          <NavLinks />
+          <NavLinks isAdmin={profile?.papel === "admin"} />
         </aside>
         <main className="flex-1 bg-[var(--background)] p-4 sm:p-6">{children}</main>
       </div>
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-[var(--border)] bg-white sm:hidden">
-        <NavLinks horizontal />
+        <NavLinks horizontal isAdmin={profile?.papel === "admin"} />
       </nav>
       <div className="h-14 sm:hidden" />
     </div>

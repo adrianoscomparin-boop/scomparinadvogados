@@ -4,15 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
-const links = [
+const baseLinks = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/processos", label: "Processos", icon: "⚖️" },
   { href: "/financeiro", label: "Financeiro", icon: "💰" },
   { href: "/clientes", label: "Clientes", icon: "👥" },
 ];
 
-export function NavLinks({ horizontal = false }: { horizontal?: boolean }) {
+const adminLink = { href: "/usuarios", label: "Usuários", icon: "🔑" };
+
+export function NavLinks({ horizontal = false, isAdmin = false }: { horizontal?: boolean; isAdmin?: boolean }) {
   const pathname = usePathname();
+  const links = isAdmin ? [...baseLinks, adminLink] : baseLinks;
 
   if (horizontal) {
     return (
