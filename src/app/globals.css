@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f6f8;
+  --foreground: #1a2233;
+  --brand: #7a4510;
+  --brand-dark: #5c3308;
+  --accent: #c9922a;
+  --surface: #ffffff;
+  --border: #e2e5ea;
+  --danger: #b3261e;
+  --success: #1e7a3d;
+  --warning: #b8860b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff8e8;
+}
+.btn-primary:hover {
+  background: var(--brand-dark);
+}
