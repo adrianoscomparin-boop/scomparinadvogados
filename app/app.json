@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Scomparin Advogados",
+    "slug": "scomparin-advogados",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a3a5c"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.scomparinadvogados.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a3a5c"
+      },
+      "package": "com.scomparinadvogados.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/scomparin-advogados"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "scomparin-advogados"
+      }
+    }
+  }
+}
