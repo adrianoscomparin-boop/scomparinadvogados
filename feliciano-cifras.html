@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feliciano Cifras</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a237e;
+      --primary-light: #534bae;
+      --primary-dark: #000051;
+      --gold: #f9a825;
+      --gold-light: #ffd95a;
+      --chord: #1565c0;
+      --chord-bg: #e3f2fd;
+      --bg: #f0f2f8;
+      --surface: #ffffff;
+      --surface2: #f8f9fc;
+      --border: #e0e4f0;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --text-light: #9ca3af;
+      --danger: #c62828;
+      --shadow: 0 2px 8px rgba(26,35,126,0.1);
+      --shadow-lg: 0 8px 24px rgba(26,35,126,0.15);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: 0.2s ease;
+      --sidebar-w: 300px;
+      --header-h: 64px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: var(--header-h) 1fr;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      grid-template-areas: "header header" "sidebar main";
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      grid-area: header;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+
+    #sidebarToggle {
+      display: none;
+      width: 40px; height: 40px;
+      border: none; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      color: white; cursor: pointer;
+      align-items: center; justify-content: center;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    #sidebarToggle:hover { background: rgba(255,255,255,0.25); }
+
+    .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: var(--gold);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text { color: white; font-weight: 700; font-size: 18px; line-height: 1.1; }
+    .logo-text small { display: block; color: var(--gold-light); font-size: 11px; font-weight: 400; letter-spacing: 0.5px; }
+
+    .search-bar { flex: 1; position: relative; max-width: 480px; }
+    .search-bar input {
+      width: 100%; padding: 10px 16px 10px 44px;
+      border: none; border-radius: 24px;
+      background: rgba(255,255,255,0.15); color: white;
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: var(--transition);
+    }
+    .search-bar input::placeholder { color: rgba(255,255,255,0.6); }
+    .search-bar input:focus { background: rgba(255,255,255,0.25); }
+    .search-bar .material-icons-round {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%); color: rgba(255,255,255,0.7); font-size: 20px;
+    }
+
+    .header-actions { display: flex; gap: 8px; margin-left: auto; }
+
+    .btn-icon {
+      width: 40px; height: 40px; border: none; border-radius: 50%;
+      background: rgba(255,255,255,0.15); color: white;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .btn-icon:hover { background: rgba(255,255,255,0.25); }
+
+    .btn-add {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border: none; border-radius: 24px;
+      background: var(--gold); color: var(--primary-dark);
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: var(--transition); white-space: nowrap;
+    }
+    .btn-add:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .btn-add .material-icons-round { font-size: 18px; }
+
+    /* ===== SIDEBAR ===== */
+    aside {
+      grid-area: sidebar;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .category-tabs {
+      padding: 12px 12px 12px;
+      display: flex; gap: 6px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .cat-tab {
+      padding: 5px 12px;
+      border: 1.5px solid var(--border); border-radius: 20px;
+      background: none; font-family: inherit; font-size: 12px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; transition: var(--transition);
+    }
+    .cat-tab:hover, .cat-tab.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    .song-list-header {
+      padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .song-count { font-size: 12px; color: var(--text-muted); }
+
+    .song-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
+
+    .song-item {
+      padding: 12px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition); margin-bottom: 2px;
+    }
+    .song-item:hover { background: var(--surface2); }
+    .song-item.active { background: var(--primary); color: white; }
+
+    .song-item-title {
+      font-size: 14px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .song-item-meta {
+      font-size: 12px; opacity: 0.7; margin-top: 2px;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .cat-badge {
+      padding: 1px 7px; border-radius: 10px;
+      font-size: 10px; font-weight: 600;
+      background: var(--chord-bg); color: var(--chord);
+    }
+    .song-item.active .cat-badge { background: rgba(255,255,255,0.2); color: white; }
+
+    .empty-list { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty-list .material-icons-round { font-size: 48px; display: block; margin-bottom: 8px; opacity: 0.3; }
+
+    /* ===== MAIN ===== */
+    main { grid-area: main; display: flex; flex-direction: column; overflow: hidden; }
+
+    .song-toolbar {
+      padding: 10px 20px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .song-toolbar-title {
+      font-size: 16px; font-weight: 700; flex: 1; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .toolbar-group {
+      display: flex; align-items: center; gap: 2px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 3px;
+    }
+    .toolbar-group .t-btn {
+      width: 30px; height: 30px; border: none; border-radius: 6px;
+      background: none; color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .toolbar-group .t-btn:hover { background: var(--primary); color: white; }
+    .toolbar-label {
+      font-size: 13px; font-weight: 600; min-width: 34px;
+      text-align: center; color: var(--primary);
+    }
+
+    .btn-present {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border: none; border-radius: var(--radius-sm);
+      background: var(--primary); color: white; font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition);
+    }
+    .btn-present:hover { background: var(--primary-light); }
+    .btn-present .material-icons-round { font-size: 18px; }
+
+    .btn-action {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text); font-family: inherit;
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition);
+    }
+    .btn-action:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-action.danger:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-action .material-icons-round { font-size: 17px; }
+
+    .song-content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    .song-meta-bar {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .meta-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 13px; color: var(--text-muted);
+    }
+    .meta-chip .material-icons-round { font-size: 15px; }
+
+    /* ===== CIFRA DISPLAY ===== */
+    .cifra-container {
+      font-family: 'Roboto Mono', monospace;
+      line-height: 1.9;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .cifra-line { margin-bottom: 2px; }
+    .chord-row { display: flex; flex-wrap: wrap; }
+    .seg { display: inline-flex; flex-direction: column; }
+    .seg .cn {
+      color: var(--chord); font-weight: 700;
+      font-size: 0.9em; display: block; line-height: 1.4; white-space: pre;
+    }
+    .seg .lt { display: block; white-space: pre; }
+    .pure-lyric { white-space: pre; display: block; }
+    .blank-line { height: 10px; display: block; }
+    .section-marker {
+      color: var(--text-muted); font-size: 0.75em;
+      font-family: 'Poppins', sans-serif; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      display: block; margin: 14px 0 4px;
+      border-left: 3px solid var(--gold); padding-left: 8px;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; gap: 12px; color: var(--text-muted);
+      text-align: center; padding: 40px;
+    }
+    .empty-state .material-icons-round { font-size: 80px; opacity: 0.12; }
+    .empty-state h2 { font-size: 20px; color: var(--text); opacity: 0.4; }
+    .empty-state p { font-size: 14px; max-width: 280px; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 1000;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: var(--radius);
+      width: 100%; max-width: 740px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-header .btn-close {
+      width: 36px; height: 36px; border: none; border-radius: 50%;
+      background: var(--surface2); color: var(--text-muted);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .modal-header .btn-close:hover { background: var(--border); }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 14px; color: var(--text);
+      background: var(--surface); outline: none; transition: var(--transition);
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+    .form-group textarea { font-family: 'Roboto Mono', monospace; font-size: 13px; resize: vertical; min-height: 220px; }
+    .form-hint { font-size: 11px; color: var(--text-light); margin-top: 5px; line-height: 1.5; }
+    .modal-footer {
+      padding: 14px 24px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    .btn-primary {
+      padding: 10px 22px; border: none; border-radius: var(--radius-sm);
+      background: var(--primary); color: white;
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);
+    }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-secondary {
+      padding: 10px 22px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text);
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: var(--transition);
+    }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ===== PRESENTATION MODE ===== */
+    .pres-overlay {
+      display: none; position: fixed; inset: 0;
+      background: #0a0a1a; z-index: 2000;
+      flex-direction: column;
+    }
+    .pres-overlay.open { display: flex; }
+    .pres-header {
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08);
+      gap: 16px; flex-wrap: wrap;
+    }
+    .pres-song-info .pres-title { color: white; font-size: 20px; font-weight: 700; }
+    .pres-song-info .pres-artist { color: rgba(255,255,255,0.5); font-size: 13px; }
+    .pres-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pres-group-label { color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pres-toolbar-group {
+      display: flex; align-items: center; gap: 2px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm); padding: 3px;
+    }
+    .pres-toolbar-group .t-btn { background: none; color: white; }
+    .pres-toolbar-group .t-btn:hover { background: rgba(255,255,255,0.15); }
+    .pres-toolbar-group .toolbar-label { color: var(--gold-light); }
+    .scroll-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm);
+      background: none; color: white; font-family: inherit; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: var(--transition);
+    }
+    .scroll-btn:hover { background: rgba(255,255,255,0.1); }
+    .scroll-btn.active { background: var(--gold); border-color: var(--gold); color: #000; }
+    .scroll-btn .material-icons-round { font-size: 18px; }
+    .pres-exit {
+      width: 38px; height: 38px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+      background: none; color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: var(--transition);
+    }
+    .pres-exit:hover { background: rgba(255,255,255,0.1); }
+    .pres-content { flex: 1; overflow-y: auto; padding: 40px 60px; }
+    .pres-content .cifra-container { background: transparent; border: none; box-shadow: none; padding: 0; }
+    .pres-content .seg .cn { color: #64b5f6; }
+    .pres-content .seg .lt { color: #f5f5f5; }
+    .pres-content .pure-lyric { color: #f5f5f5; }
+    .pres-content .section-marker { color: var(--gold); border-left-color: var(--gold); }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #1a1a2e; color: white; padding: 12px 20px; border-radius: 24px;
+      font-size: 14px; font-weight: 500; z-index: 9999;
+      box-shadow: var(--shadow-lg); transition: transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-areas: "header" "main";
+      }
+      aside {
+        position: fixed; top: var(--header-h); left: 0; bottom: 0;
+        width: var(--sidebar-w); z-index: 200;
+        transform: translateX(-100%); transition: transform 0.3s ease;
+        box-shadow: var(--shadow-lg);
+      }
+      aside.open { transform: translateX(0); }
+      .sidebar-overlay {
+        display: none; position: fixed; inset: 0; top: var(--header-h);
+        background: rgba(0,0,0,0.4); z-index: 199;
+      }
+      .sidebar-overlay.open { display: block; }
+      #sidebarToggle { display: flex; }
+      .logo-text small { display: none; }
+      .song-toolbar { padding: 8px 12px; gap: 6px; }
+      .song-content { padding: 14px; }
+      .form-row { grid-template-columns: 1fr; }
+      .pres-content { padding: 20px; }
+      .btn-add .btn-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <button class="btn-icon" id="sidebarToggle" title="Menu">
+    <span class="material-icons-round">menu</span>
+  </button>
+  <div class="logo">
+    <div class="logo-icon">🎸</div>
+    <div class="logo-text">
+      Feliciano Cifras
+      <small>Sistema de Cifras para Igreja</small>
+    </div>
+  </div>
+  <div class="search-bar">
+    <span class="material-icons-round">search</span>
+    <input type="text" id="searchInput" placeholder="Buscar por título, artista ou letra...">
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" id="importBtn" title="Importar músicas">
+      <span class="material-icons-round">upload</span>
+    </button>
+    <button class="btn-icon" id="exportBtn" title="Exportar músicas">
+      <span class="material-icons-round">download</span>
+    </button>
+    <button class="btn-add" id="addSongBtn">
+      <span class="material-icons-round">add</span>
+      <span class="btn-label">Nova Cifra</span>
+    </button>
+  </div>
+</header>
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+<!-- ===== SIDEBAR ===== -->
+<aside id="sidebar">
+  <div class="category-tabs" id="categoryTabs"></div>
+  <div class="song-list-header">
+    <span class="song-count" id="songCount">0 músicas</span>
+  </div>
+  <div class="song-list" id="songList"></div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== MAIN ===== -->
+<main>
+  <div id="songToolbar" class="song-toolbar" style="display:none">
+    <div class="song-toolbar-title" id="toolbarTitle"></div>
+
+    <div style="display:flex;align-items:center;gap:4px">
+      <span style="font-size:11px;color:var(--text-muted);font-weight:600">TOM</span>
+      <div class="toolbar-group">
+        <button class="t-btn" id="transposeDown" title="Diminuir tom">
+          <span class="material-icons-round" style="font-size:18px">remove</span>
+        </button>
+        <span class="toolbar-label" id="transposeLabel">+0</span>
+        <button class="t-btn" id="transposeUp" title="Aumentar tom">
+          <span class="material-icons-round" style="font-size:18px">add</span>
+        </button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:4px">
+      <span style="font-size:11px;color:var(--text-muted);font-weight:600">A</span>
+      <div class="toolbar-group">
+        <button class="t-btn" id="fontDecrease" title="Diminuir fonte">
+          <span class="material-icons-round" style="font-size:18px">text_decrease</span>
+        </button>
+        <span class="toolbar-label" id="fontLabel">15</span>
+        <button class="t-btn" id="fontIncrease" title="Aumentar fonte">
+          <span class="material-icons-round" style="font-size:18px">text_increase</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-present" id="presentBtn">
+      <span class="material-icons-round">fullscreen</span>
+      Apresentar
+    </button>
+    <button class="btn-action" id="editBtn">
+      <span class="material-icons-round">edit</span>
+      Editar
+    </button>
+    <button class="btn-action danger" id="deleteBtn" title="Excluir música">
+      <span class="material-icons-round">delete_outline</span>
+    </button>
+  </div>
+
+  <div class="song-content" id="songContent">
+    <div class="empty-state" id="emptyState">
+      <span class="material-icons-round">library_music</span>
+      <h2>Nenhuma música selecionada</h2>
+      <p>Selecione uma música na lista ao lado ou adicione uma nova cifra</p>
+    </div>
+    <div id="songDisplay" style="display:none"></div>
+  </div>
+</main>
+
+<!-- ===== MODAL ADD/EDIT ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">Nova Cifra</h2>
+      <button class="btn-close" id="closeModal">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Título *</label>
+          <input type="text" id="inputTitle" placeholder="Nome da música">
+        </div>
+        <div class="form-group">
+          <label>Artista / Ministério</label>
+          <input type="text" id="inputArtist" placeholder="Ex: Hillsong, Aline Barros">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="inputCategory">
+            <option value="Louvor">Louvor</option>
+            <option value="Adoração">Adoração</option>
+            <option value="Ofertório">Ofertório</option>
+            <option value="Hino">Hino</option>
+            <option value="Comunhão">Comunhão</option>
+            <option value="Entrada">Entrada</option>
+            <option value="Saída">Saída</option>
+            <option value="Especial">Especial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tom Original</label>
+          <input type="text" id="inputTone" placeholder="Ex: G, D, C, Am">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cifra</label>
+        <textarea id="inputContent" placeholder="Cole ou escreva a cifra aqui...
+
+Use [ACORDE] inline para marcar os acordes. Exemplos:
+[INTRO]
+[G] [D] [Em] [C]
+
+[VERSO]
+[G]Quão grande é o [D]nosso Deus
+[Em]Todo ser vai [C]adorar
+
+[REFRÃO]
+[G]Cante conosco [D]quão grande
+[Em]É o nosso [C]Deus"></textarea>
+        <div class="form-hint">
+          ♪ Seções: use [INTRO], [VERSO], [PRÉ-REFRÃO], [REFRÃO], [PONTE], [FINAL] em linhas separadas.<br>
+          ♪ Acordes: use [Acorde] antes da sílaba onde o acorde toca. Ex: [G]Senhor, [D/F#]grande.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="cancelModal">Cancelar</button>
+      <button class="btn-primary" id="saveSong">Salvar Cifra</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PRESENTATION MODE ===== -->
+<div class="pres-overlay" id="presOverlay">
+  <div class="pres-header">
+    <div class="pres-song-info">
+      <div class="pres-title" id="presTitle"></div>
+      <div class="pres-artist" id="presArtist"></div>
+    </div>
+    <div class="pres-controls">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <span class="pres-group-label">Tom</span>
+        <div class="pres-toolbar-group toolbar-group">
+          <button class="t-btn" id="presTransposeDown">
+            <span class="material-icons-round" style="font-size:18px">remove</span>
+          </button>
+          <span class="toolbar-label" id="presTransposeLabel">+0</span>
+          <button class="t-btn" id="presTransposeUp">
+            <span class="material-icons-round" style="font-size:18px">add</span>
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <span class="pres-group-label">Fonte</span>
+        <div class="pres-toolbar-group toolbar-group">
+          <button class="t-btn" id="presFontDown">
+            <span class="material-icons-round" style="font-size:18px">text_decrease</span>
+          </button>
+          <span class="toolbar-label" id="presFontLabel">20</span>
+          <button class="t-btn" id="presFontUp">
+            <span class="material-icons-round" style="font-size:18px">text_increase</span>
+          </button>
+        </div>
+      </div>
+      <button class="scroll-btn" id="autoScrollBtn">
+        <span class="material-icons-round">play_arrow</span>
+        Auto Scroll
+      </button>
+      <button class="pres-exit" id="closePres" title="Sair da apresentação">
+        <span class="material-icons-round">fullscreen_exit</span>
+      </button>
+    </div>
+  </div>
+  <div class="pres-content" id="presContent"></div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STORAGE
+// ============================================================
+const STORAGE_KEY = 'feliciano_cifras_v2';
+
+function loadSongs() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function persistSongs() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.songs));
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+// ============================================================
+// CHORD ENGINE
+// ============================================================
+const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const FLAT_ROOTS = new Set(['F','Bb','Eb','Ab','Db','Gb']);
+
+function noteIdx(n) {
+  let i = SHARP.indexOf(n);
+  return i !== -1 ? i : FLAT.indexOf(n);
+}
+
+function shiftNote(note, steps) {
+  const i = noteIdx(note);
+  if (i === -1) return note;
+  const useFlat = steps < 0 || FLAT_ROOTS.has(note);
+  return (useFlat ? FLAT : SHARP)[(i + steps + 12) % 12];
+}
+
+function transposeChord(chord, steps) {
+  if (!steps) return chord;
+  // Slash chord: G/B
+  const slash = chord.indexOf('/');
+  if (slash !== -1) {
+    return transposeChord(chord.slice(0, slash), steps) + '/' + transposeChord(chord.slice(slash + 1), steps);
+  }
+  const m = chord.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return chord;
+  return shiftNote(m[1], steps) + m[2];
+}
+
+// ============================================================
+// CIFRA RENDERER
+// ============================================================
+const SECTION_RE = /^\[(INTRO|INTROD|VERS[OÃ]O?|PR[EÉ][-\s]?REFR[ÃA]O|REFR[ÃA]O|CORO|PONTE|BRIDGE|SOLO|FINAL|OUTRO|INTERLÚDIO|VERSE|CHORUS|PRE[-\s]?CHORUS|INSTRUMENTAL)\]?:?\s*$/i;
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderCifra(text, steps, fontSize) {
+  if (!text) return '';
+  const lines = text.split('\n');
+  const html = lines.map(line => {
+    const tr = line.trim();
+
+    if (!tr) return '<span class="blank-line"></span>';
+
+    if (SECTION_RE.test(tr)) {
+      return `<span class="section-marker">${esc(tr.replace(/[\[\]:]/g, '').trim())}</span>`;
+    }
+
+    if (!tr.includes('[')) {
+      return `<div class="cifra-line"><span class="pure-lyric">${esc(line)}</span></div>`;
+    }
+
+    // Parse into segments [{chord, lyric}]
+    const parts = line.split(/(\[[^\]]+\])/);
+    const segs = [];
+    let pending = null;
+
+    for (const p of parts) {
+      const cm = p.match(/^\[([^\]]+)\]$/);
+      if (cm) {
+        if (pending !== null) segs.push({ chord: pending, lyric: '' });
+        pending = cm[1];
+      } else {
+        if (pending !== null) { segs.push({ chord: pending, lyric: p }); pending = null; }
+        else if (p) segs.push({ chord: '', lyric: p });
+      }
+    }
+    if (pending !== null) segs.push({ chord: pending, lyric: '' });
+
+    const inner = segs.map(s => {
+      const c = s.chord ? transposeChord(s.chord, steps) : '';
+      return `<span class="seg"><span class="cn">${c ? esc(c) : ' '}</span><span class="lt">${esc(s.lyric) || ' '}</span></span>`;
+    }).join('');
+
+    return `<div class="cifra-line"><div class="chord-row">${inner}</div></div>`;
+  }).join('');
+
+  return `<div class="cifra-container" style="font-size:${fontSize}px">${html}</div>`;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  songs: loadSongs(),
+  currentId: null,
+  search: '',
+  category: 'all',
+  transpose: 0,
+  fontSize: 15,
+  presTranspose: 0,
+  presFontSize: 20,
+};
+
+if (!state.songs.length) {
+  state.songs = defaultSongs();
+  persistSongs();
+}
+
+function defaultSongs() {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: genId(), title: 'Quão Grande é Nosso Deus', artist: 'Chris Tomlin',
+      category: 'Adoração', tone: 'G', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[G] [D] [Em] [C]
+
+[VERSO]
+[G]O esplendor do Rei [D]vestido em majestade
+[Em]A luz da eternidade [C]
+
+[G]Começou a cantar [D]como será Sua voz
+[Em]Trovão e oceanos [C]cantam quão grande és
+
+[PRÉ-REFRÃO]
+[Em]Idade sem fim [C]
+[G]Tu és [D]Tu és
+
+[REFRÃO]
+[G]Quão grande é o nosso Deus
+[D]Cante conosco
+[Em]Quão grande é o nosso Deus
+[C]E todas nações cantarão
+[G]Quão grande [D]quão grande
+[Em]É o nosso Deus [C]`
+    },
+    {
+      id: genId(), title: 'Oceans (Águas Profundas)', artist: 'Hillsong United',
+      category: 'Adoração', tone: 'D', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[D] [A] [Bm] [G]
+
+[VERSO]
+[D]Tu me chamas para [A]águas mais profundas
+[Bm]Onde os pés não to[G]cam o fundo
+[D]E então eu vou [A]onde Tu estás
+[Bm]Minha fé será [G]sustentada
+
+[PRÉ-REFRÃO]
+[D]Nas ondas Tu és [A]firme
+[Bm]Nas tempestades Tu és [G]paz
+
+[REFRÃO]
+[D]Espírito me leva
+[A]Para além da margem
+[Bm]Onde eu posso ca[G]minhar sobre as águas
+[D]Rendido à Tua graça
+[A]Onde o medo não me vence
+[Bm]Minha fé está em [G]Ti`
+    },
+    {
+      id: genId(), title: 'Grande é o Senhor', artist: 'Ministério Avivah',
+      category: 'Louvor', tone: 'C', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[C] [G] [Am] [F]
+
+[VERSO]
+[C]Grande é o Senhor
+[G]E mui digno de louvor
+[Am]Na cidade do nosso Deus
+[F]No seu santo monte
+
+[C]Bela de alteza
+[G]Alegria de toda a terra
+[Am]O monte de Sião
+[F]Cidade do grande Rei
+
+[REFRÃO]
+[F]Grande é o Senhor
+[G]Grande é o Senhor
+[C]Grande é o Senhor [Am]nosso Deus
+[F]Grande é o Senhor
+[G]Grande é o Senhor
+[C]Cantemos ao Senhor`
+    },
+    {
+      id: genId(), title: 'Faz-me Instrumento', artist: 'Pe. Zezinho',
+      category: 'Ofertório', tone: 'G', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[G] [C] [D] [G]
+
+[VERSO]
+[G]Faze-me instrumento de Tua paz
+[C]Onde houver ódio que eu leve o amor
+[D]Onde houver ofensa que eu leve o perdão
+[G]Onde houver discórdia que eu leve a união
+[C]Onde houver dúvida que eu leve a fé
+[D]Onde houver erro que eu leve a verdade
+[G]Onde houver desespero a esperança
+[C]Onde houver tristeza que eu leve alegria [D]
+
+[REFRÃO]
+[G]Ó Mestre fazei que eu procure mais
+[C]Consolar que ser consolado
+[G]Compreender que ser compreendido
+[D]Amar que ser amado [G]`
+    },
+    {
+      id: genId(), title: '10,000 Reasons', artist: 'Matt Redman',
+      category: 'Louvor', tone: 'C', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[C] [G] [Am] [F]
+
+[REFRÃO]
+[C]Bless the Lord O my soul
+[G]O my soul
+[Am]Worship His holy name
+[F]Sing like never before
+[C]O my soul
+[G]I'll worship Your holy [C]name
+
+[VERSO]
+[C]The sun comes up it's a new day dawning
+[G]It's time to sing Your song again
+[Am]Whatever may pass and whatever lies before me
+[F]Let me be singing when the evening comes
+
+[C]You're rich in love and You're slow to anger
+[G]Your name is great and Your heart is kind
+[Am]For all Your goodness I will keep on singing
+[F]Ten thousand reasons for my heart to find`
+    },
+    {
+      id: genId(), title: 'Jardim do Éden', artist: 'Gabriela Rocha',
+      category: 'Adoração', tone: 'E', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[E] [B] [C#m] [A]
+
+[VERSO]
+[E]Tu és o Deus de mara[B]vilhas
+[C#m]Tudo que existe foi [A]por Ti criado
+[E]Eu vejo em cada nascer do [B]sol
+[C#m]Tua glória re[A]velada
+
+[REFRÃO]
+[E]Como é grande o teu amor
+[B]Como é forte o teu poder
+[C#m]Toda criação Te a[A]dora
+[E]Como é belo o teu favor
+[B]Sobre mim em todo lugar
+[C#m]Tua glória me en[A]volve`
+    },
+    {
+      id: genId(), title: 'Santo Espírito', artist: 'Davi Sacer',
+      category: 'Entrada', tone: 'D', createdAt: now, updatedAt: now,
+      content: `[INTRO]
+[D] [G] [A] [D]
+
+[VERSO]
+[D]Santo Espírito vem
+[G]Enche o nosso ser
+[A]Com Tua presença Senhor
+[D]Vem aqui
+
+[D]Teu fogo nos consome
+[G]Teu amor nos transforma
+[A]E a Tua glória
+[D]Enche este lugar
+
+[REFRÃO]
+[G]Derrama Senhor
+[A]Derrama Senhor
+[D]Derrama o Teu Espírito [Bm]
+[G]Aviva Senhor
+[A]Aviva Senhor
+[D]Aviva o nosso coração`
+    },
+  ];
+}
+
+// ============================================================
+// CATEGORIES
+// ============================================================
+function usedCategories() {
+  const cats = [...new Set(state.songs.map(s => s.category).filter(Boolean))];
+  return cats.sort();
+}
+
+// ============================================================
+// FILTER
+// ============================================================
+function filtered() {
+  const q = state.search.toLowerCase();
+  return state.songs
+    .filter(s => {
+      const catOk = state.category === 'all' || s.category === state.category;
+      const qOk = !q || s.title.toLowerCase().includes(q)
+        || (s.artist || '').toLowerCase().includes(q)
+        || (s.content || '').toLowerCase().includes(q);
+      return catOk && qOk;
+    })
+    .sort((a, b) => a.title.localeCompare(b.title, 'pt'));
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderCategoryTabs() {
+  const cats = usedCategories();
+  document.getElementById('categoryTabs').innerHTML =
+    ['all', ...cats].map(c => `
+      <button class="cat-tab ${state.category === c ? 'active' : ''}"
+              onclick="selectCategory('${c}')">
+        ${c === 'all' ? 'Todas' : esc(c)}
+      </button>`).join('');
+}
+
+function renderSongList() {
+  const songs = filtered();
+  const el = document.getElementById('songCount');
+  el.textContent = `${songs.length} música${songs.length !== 1 ? 's' : ''}`;
+
+  if (!songs.length) {
+    document.getElementById('songList').innerHTML = `
+      <div class="empty-list">
+        <span class="material-icons-round">music_off</span>
+        <p>${state.search ? 'Nenhuma música encontrada' : 'Nenhuma música cadastrada'}</p>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('songList').innerHTML = songs.map(s => `
+    <div class="song-item ${s.id === state.currentId ? 'active' : ''}"
+         onclick="selectSong('${s.id}')">
+      <div class="song-item-title">${esc(s.title)}</div>
+      <div class="song-item-meta">
+        <span>${esc(s.artist || 'Desconhecido')}</span>
+        ${s.category ? `<span class="cat-badge">${esc(s.category)}</span>` : ''}
+        ${s.tone ? `<span>Tom: ${esc(s.tone)}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function renderSongView() {
+  const song = state.songs.find(s => s.id === state.currentId);
+
+  if (!song) {
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('songDisplay').style.display = 'none';
+    document.getElementById('songToolbar').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('songDisplay').style.display = 'block';
+  document.getElementById('songToolbar').style.display = 'flex';
+  document.getElementById('toolbarTitle').textContent = song.title;
+  updateTransposeLabel();
+  document.getElementById('fontLabel').textContent = state.fontSize;
+
+  const toneDisplay = song.tone
+    ? `${song.tone}${state.transpose ? ` → ${transposeChord(song.tone, state.transpose)}` : ''}`
+    : '';
+
+  document.getElementById('songDisplay').innerHTML = `
+    <div class="song-meta-bar">
+      ${song.artist ? `<div class="meta-chip"><span class="material-icons-round">person</span>${esc(song.artist)}</div>` : ''}
+      ${song.category ? `<div class="meta-chip"><span class="material-icons-round">label</span>${esc(song.category)}</div>` : ''}
+      ${toneDisplay ? `<div class="meta-chip"><span class="material-icons-round">music_note</span>${esc(toneDisplay)}</div>` : ''}
+    </div>
+    ${renderCifra(song.content, state.transpose, state.fontSize)}`;
+}
+
+function renderAll() {
+  renderCategoryTabs();
+  renderSongList();
+  renderSongView();
+}
+
+function updateTransposeLabel() {
+  const v = state.transpose;
+  document.getElementById('transposeLabel').textContent = v > 0 ? `+${v}` : `${v}`;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function selectSong(id) {
+  state.currentId = id;
+  state.transpose = 0;
+  renderSongList();
+  renderSongView();
+  closeSidebar();
+}
+
+function selectCategory(cat) {
+  state.category = cat;
+  renderAll();
+}
+
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'Nova Cifra';
+  document.getElementById('inputTitle').value = '';
+  document.getElementById('inputArtist').value = '';
+  document.getElementById('inputCategory').value = 'Louvor';
+  document.getElementById('inputTone').value = '';
+  document.getElementById('inputContent').value = '';
+  document.getElementById('modalOverlay').dataset.editId = '';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('inputTitle').focus(), 100);
+}
+
+function openEditModal() {
+  const song = state.songs.find(s => s.id === state.currentId);
+  if (!song) return;
+  document.getElementById('modalTitle').textContent = 'Editar Cifra';
+  document.getElementById('inputTitle').value = song.title;
+  document.getElementById('inputArtist').value = song.artist || '';
+  document.getElementById('inputCategory').value = song.category || 'Louvor';
+  document.getElementById('inputTone').value = song.tone || '';
+  document.getElementById('inputContent').value = song.content || '';
+  document.getElementById('modalOverlay').dataset.editId = song.id;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function saveModal() {
+  const title = document.getElementById('inputTitle').value.trim();
+  if (!title) {
+    document.getElementById('inputTitle').focus();
+    document.getElementById('inputTitle').style.borderColor = 'var(--danger)';
+    return;
+  }
+  document.getElementById('inputTitle').style.borderColor = '';
+
+  const editId = document.getElementById('modalOverlay').dataset.editId;
+  const now = new Date().toISOString();
+  const data = {
+    title,
+    artist: document.getElementById('inputArtist').value.trim(),
+    category: document.getElementById('inputCategory').value,
+    tone: document.getElementById('inputTone').value.trim(),
+    content: document.getElementById('inputContent').value,
+    updatedAt: now,
+  };
+
+  if (editId) {
+    const idx = state.songs.findIndex(s => s.id === editId);
+    if (idx !== -1) state.songs[idx] = { ...state.songs[idx], ...data };
+    toast('Cifra atualizada!');
+  } else {
+    const song = { id: genId(), ...data, createdAt: now };
+    state.songs.push(song);
+    state.currentId = song.id;
+    toast('Cifra adicionada!');
+  }
+
+  persistSongs();
+  closeModal();
+  renderAll();
+}
+
+function deleteSong() {
+  const song = state.songs.find(s => s.id === state.currentId);
+  if (!song) return;
+  if (!confirm(`Excluir "${song.title}"?\nEsta ação não pode ser desfeita.`)) return;
+  state.songs = state.songs.filter(s => s.id !== state.currentId);
+  state.currentId = null;
+  persistSongs();
+  toast('Cifra excluída.');
+  renderAll();
+}
+
+function changeTranspose(d) {
+  state.transpose = Math.max(-6, Math.min(6, state.transpose + d));
+  updateTransposeLabel();
+  renderSongView();
+}
+
+function changeFont(d) {
+  state.fontSize = Math.max(11, Math.min(26, state.fontSize + d));
+  document.getElementById('fontLabel').textContent = state.fontSize;
+  renderSongView();
+}
+
+// ============================================================
+// PRESENTATION
+// ============================================================
+let scrollTimer = null;
+
+function openPresentation() {
+  const song = state.songs.find(s => s.id === state.currentId);
+  if (!song) return;
+  state.presTranspose = state.transpose;
+  document.getElementById('presTitle').textContent = song.title;
+  document.getElementById('presArtist').textContent = song.artist || '';
+  updatePresLabels();
+  renderPres();
+  document.getElementById('presOverlay').classList.add('open');
+  document.getElementById('presContent').scrollTop = 0;
+}
+
+function closePresentation() {
+  stopScroll();
+  document.getElementById('presOverlay').classList.remove('open');
+  resetScrollBtn();
+}
+
+function renderPres() {
+  document.getElementById('presContent').innerHTML =
+    renderCifra(
+      (state.songs.find(s => s.id === state.currentId) || {}).content || '',
+      state.presTranspose,
+      state.presFontSize
+    );
+}
+
+function updatePresLabels() {
+  const v = state.presTranspose;
+  document.getElementById('presTransposeLabel').textContent = v > 0 ? `+${v}` : `${v}`;
+  document.getElementById('presFontLabel').textContent = state.presFontSize;
+}
+
+function changePresTranspose(d) {
+  state.presTranspose = Math.max(-6, Math.min(6, state.presTranspose + d));
+  updatePresLabels();
+  renderPres();
+}
+
+function changePresFont(d) {
+  state.presFontSize = Math.max(14, Math.min(40, state.presFontSize + d));
+  updatePresLabels();
+  renderPres();
+}
+
+function toggleAutoScroll() {
+  if (scrollTimer) { stopScroll(); resetScrollBtn(); }
+  else { startScroll(); }
+}
+
+function startScroll() {
+  const btn = document.getElementById('autoScrollBtn');
+  btn.classList.add('active');
+  btn.innerHTML = '<span class="material-icons-round">pause</span> Pausar';
+  const el = document.getElementById('presContent');
+  scrollTimer = setInterval(() => {
+    el.scrollTop += 1;
+    if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
+      stopScroll(); resetScrollBtn();
+    }
+  }, 50);
+}
+
+function stopScroll() {
+  if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; }
+}
+
+function resetScrollBtn() {
+  const btn = document.getElementById('autoScrollBtn');
+  btn.classList.remove('active');
+  btn.innerHTML = '<span class="material-icons-round">play_arrow</span> Auto Scroll';
+}
+
+// ============================================================
+// SIDEBAR (MOBILE)
+// ============================================================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
+function exportSongs() {
+  const data = JSON.stringify({ app: 'Feliciano Cifras', version: 2, songs: state.songs }, null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+  a.download = `feliciano-cifras-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('Backup exportado!');
+}
+
+function importSongs() {
+  document.getElementById('importFile').click();
+}
+
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      const incoming = parsed.songs || parsed;
+      if (!Array.isArray(incoming)) throw new Error('Formato inválido');
+      const existing = new Set(state.songs.map(s => s.title + '|' + (s.artist || '')));
+      let added = 0;
+      incoming.forEach(s => {
+        if (!s.title) return;
+        const key = s.title + '|' + (s.artist || '');
+        if (!existing.has(key)) {
+          state.songs.push({ ...s, id: genId() });
+          existing.add(key);
+          added++;
+        }
+      });
+      persistSongs();
+      renderAll();
+      toast(`${added} música(s) importada(s)!`);
+    } catch {
+      alert('Arquivo inválido. Use um JSON exportado pelo Feliciano Cifras.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+document.getElementById('searchInput').addEventListener('input', e => {
+  state.search = e.target.value;
+  renderCategoryTabs();
+  renderSongList();
+});
+
+document.getElementById('addSongBtn').addEventListener('click', openAddModal);
+document.getElementById('closeModal').addEventListener('click', closeModal);
+document.getElementById('cancelModal').addEventListener('click', closeModal);
+document.getElementById('saveSong').addEventListener('click', saveModal);
+document.getElementById('editBtn').addEventListener('click', openEditModal);
+document.getElementById('deleteBtn').addEventListener('click', deleteSong);
+document.getElementById('presentBtn').addEventListener('click', openPresentation);
+document.getElementById('closePres').addEventListener('click', closePresentation);
+document.getElementById('autoScrollBtn').addEventListener('click', toggleAutoScroll);
+document.getElementById('exportBtn').addEventListener('click', exportSongs);
+document.getElementById('importBtn').addEventListener('click', importSongs);
+
+document.getElementById('transposeDown').addEventListener('click', () => changeTranspose(-1));
+document.getElementById('transposeUp').addEventListener('click', () => changeTranspose(1));
+document.getElementById('fontDecrease').addEventListener('click', () => changeFont(-1));
+document.getElementById('fontIncrease').addEventListener('click', () => changeFont(1));
+
+document.getElementById('presTransposeDown').addEventListener('click', () => changePresTranspose(-1));
+document.getElementById('presTransposeUp').addEventListener('click', () => changePresTranspose(1));
+document.getElementById('presFontDown').addEventListener('click', () => changePresFont(-2));
+document.getElementById('presFontUp').addEventListener('click', () => changePresFont(2));
+
+document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('presOverlay').classList.contains('open')) closePresentation();
+    else closeModal();
+  }
+  if (e.key === 'F5' && document.getElementById('presOverlay').classList.contains('open')) {
+    e.preventDefault(); toggleAutoScroll();
+  }
+  if (!e.ctrlKey && !e.metaKey) return;
+  if (e.key === 'ArrowUp') { e.preventDefault(); changeTranspose(1); }
+  if (e.key === 'ArrowDown') { e.preventDefault(); changeTranspose(-1); }
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); changeFont(1); }
+  if (e.key === '-') { e.preventDefault(); changeFont(-1); }
+});
+
+// Enter to save modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey &&
+      document.getElementById('modalOverlay').classList.contains('open')) {
+    saveModal();
+  }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+renderAll();
+</script>
+</body>
+</html>
