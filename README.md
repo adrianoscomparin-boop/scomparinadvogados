@@ -13,9 +13,10 @@ Stack: **Next.js (App Router) + TypeScript + Tailwind CSS + Supabase**
 2. No painel do projeto, vá em **SQL Editor** → **New query**, cole o
    conteúdo do arquivo [`supabase/migrations/0001_init.sql`](./supabase/migrations/0001_init.sql)
    e execute (`Run`). Repita o processo com
-   [`supabase/migrations/0002_admin_user_management.sql`](./supabase/migrations/0002_admin_user_management.sql).
-   Isso cria todas as tabelas, tipos, triggers e as políticas de Row Level
-   Security.
+   [`supabase/migrations/0002_admin_user_management.sql`](./supabase/migrations/0002_admin_user_management.sql)
+   e [`supabase/migrations/0003_certidoes.sql`](./supabase/migrations/0003_certidoes.sql).
+   Isso cria todas as tabelas, tipos, triggers, políticas de Row Level
+   Security e o bucket de storage usado pelo módulo de Certidões.
 3. Em **Authentication → Providers**, deixe apenas **Email** habilitado.
    Em **Authentication → Settings**, desative "Confirm email" se quiser
    liberar o acesso da equipe sem precisar confirmar e-mail (recomendado
@@ -85,6 +86,16 @@ para a tela de login. Entre com um dos usuários criados no passo 1.4.
   criar novos usuários da equipe (com papel `admin`, `advogado` ou
   `financeiro`) e ativar/desativar acessos, sem precisar entrar no painel
   do Supabase.
+- **Certidões** (`/certidoes`) — checklist de diligência imobiliária.
+  Cadastre o imóvel (endereço, matrícula) e os proprietários (CPF/CNPJ); o
+  sistema gera automaticamente a lista de certidões negativas exigidas
+  (municipal, estadual, União PF/PJ, TJMT cível/criminal, TRT23, TST, TRF1,
+  protestos e consulta de processos), com um botão que abre o portal oficial
+  correto de cada órgão em uma nova aba. Como a maioria desses portais tem
+  captcha e não oferece API pública, o preenchimento é manual no site do
+  órgão — o sistema controla o status (pendente/solicitada/emitida),
+  resultado (negativa/positiva), datas de emissão/validade (com alerta de
+  vencimento) e permite anexar o PDF obtido.
 
 Todos os dados são compartilhados entre os usuários autenticados da equipe
 (modelo de escritório único). O campo `papel` em `profiles` (`admin`,

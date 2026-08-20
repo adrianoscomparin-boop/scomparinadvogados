@@ -9,6 +9,7 @@ const baseLinks = [
   { href: "/processos", label: "Processos", icon: "⚖️" },
   { href: "/financeiro", label: "Financeiro", icon: "💰" },
   { href: "/clientes", label: "Clientes", icon: "👥" },
+  { href: "/certidoes", label: "Certidões", icon: "📜" },
 ];
 
 const adminLink = { href: "/usuarios", label: "Usuários", icon: "🔑" };
