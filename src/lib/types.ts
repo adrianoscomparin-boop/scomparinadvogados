@@ -176,3 +176,73 @@ export const TIPO_RELACAO_LABELS: Record<TipoRelacaoCliente, string> = {
   devedor: "Devedor",
   ambos: "Cliente e Devedor",
 };
+
+export type StatusPesquisaCertidoes = "em_andamento" | "concluida";
+export type StatusCertidaoItem = "pendente" | "solicitada" | "emitida" | "nao_aplicavel";
+export type ResultadoCertidaoItem = "negativa" | "positiva";
+
+export interface CertidaoPesquisa {
+  id: string;
+  titulo: string;
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  cep: string | null;
+  matricula: string | null;
+  inscricao_imobiliaria: string | null;
+  cliente_id: string | null;
+  processo_id: string | null;
+  status: StatusPesquisaCertidoes;
+  observacoes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  clientes?: Pick<Cliente, "id" | "nome"> | null;
+  processos?: Pick<Processo, "id" | "numero_processo"> | null;
+}
+
+export interface CertidaoParte {
+  id: string;
+  pesquisa_id: string;
+  nome: string;
+  cpf_cnpj: string | null;
+  tipo_pessoa: TipoPessoa;
+  created_at: string;
+}
+
+export interface CertidaoItem {
+  id: string;
+  pesquisa_id: string;
+  parte_id: string | null;
+  tipo: string;
+  status: StatusCertidaoItem;
+  resultado: ResultadoCertidaoItem | null;
+  data_solicitacao: string | null;
+  data_emissao: string | null;
+  data_validade: string | null;
+  arquivo_path: string | null;
+  arquivo_nome: string | null;
+  observacoes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const STATUS_PESQUISA_CERTIDOES_LABELS: Record<StatusPesquisaCertidoes, string> = {
+  em_andamento: "Em andamento",
+  concluida: "Concluída",
+};
+
+export const STATUS_CERTIDAO_ITEM_LABELS: Record<StatusCertidaoItem, string> = {
+  pendente: "Pendente",
+  solicitada: "Solicitada",
+  emitida: "Emitida",
+  nao_aplicavel: "Não aplicável",
+};
+
+export const RESULTADO_CERTIDAO_ITEM_LABELS: Record<ResultadoCertidaoItem, string> = {
+  negativa: "Negativa",
+  positiva: "Positiva",
+};
