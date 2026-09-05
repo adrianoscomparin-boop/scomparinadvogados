@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const CENTER = 100;
 const FACE_R = 94;
@@ -9,80 +9,49 @@ const HOUR_LEN = 50;
 const MINUTE_W = 2.3;
 const HOUR_W = 3.1;
 
+const INK = "#1a1a1a";
+const FACE = "#f2ede1";
+const OVERALLS = "#2c4a78";
+const METAL = "#8b929c";
+
 /**
- * O chão é uma linha imaginária: a escada nasce nele e o pintor nunca fica
- * abaixo dele. Os limites de x mantêm a base da escada dentro do mostrador,
- * que é redondo e por isso estreita justamente na altura do chão.
+ * Piso reto. Os limites de x mantêm a base da escada dentro do mostrador, que é
+ * redondo e por isso estreita justamente na altura do chão; em OFFSTAGE_X o
+ * disco já acabou, então homem, escada e balde somem inteiros atrás da borda
+ * sem precisar de nenhum truque de opacidade.
  */
 const FLOOR_Y = 160;
-const LADDER_TOP_Y = 40;
-const BODY_X_MIN = 36;
-const BODY_X_MAX = 164;
+const LADDER_LEN = 128;
+const RUNG = 8;
+const RAIL = 4.2;
+const OFFSTAGE_X = 12;
+const X_MIN = 36;
+const X_MAX = 164;
 
-/** Onde o pintor fica de pé entre um serviço e outro, junto do balde. */
-const STAND = { x: 46, y: FLOOR_Y };
-const IDLE_DELAY_MS = 3000;
+// Proporções do boneco, em unidades do mostrador (≈30 de altura).
+const THIGH = 8;
+const SHIN = 8.5;
+const UPPER_ARM = 5.6;
+const FOREARM = 5.6;
+const HIP_H = 15;
+const TORSO = 11;
+const HEAD_R = 3.3;
+const STRIDE = 9;
+const STEP_LIFT = 3.2;
+const POLE = 13;
 
-/**
- * O ponteiro dos minutos é apagado da ponta para o centro nos últimos 3s do
- * minuto e repintado do centro para fora nos primeiros 4s do minuto seguinte —
- * o rodo passa pelo centro exatamente na virada, então a troca de ângulo não
- * tem salto visível. O ponteiro das horas anda de 12 em 12 minutos e é
- * refeito do mesmo jeito.
- */
 const HOUR_STEP_MIN = 12;
-
-const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+const IDLE_DELAY_MS = 3000;
 
 type Point = { x: number; y: number };
 
+const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
+const pt = (x: number, y: number): Point => ({ x, y });
+
 function pointAt(angleDeg: number, radius: number): Point {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: CENTER + Math.cos(rad) * radius, y: CENTER + Math.sin(rad) * radius };
-}
-
-/**
- * Onde os pés ficam para a mão alcançar `tool`: um degrau abaixo do serviço,
- * nunca acima do topo da escada nem abaixo do chão.
- */
-function footFor(tool: Point): Point {
-  const side = tool.x >= CENTER ? 1 : -1;
-  return {
-    x: clamp(tool.x + side * 13, BODY_X_MIN, BODY_X_MAX),
-    y: clamp(tool.y + 27, LADDER_TOP_Y + 6, FLOOR_Y),
-  };
-}
-
-const lerpPoint = (a: Point, b: Point, p: number): Point => ({
-  x: a.x + (b.x - a.x) * p,
-  y: a.y + (b.y - a.y) * p,
-});
-
-/**
- * Trajeto do pintor entre dois serviços: desce a escada, empurra ela pelo chão
- * e sobe do outro lado — nunca atravessa o mostrador pelo ar. O tempo é
- * repartido pela distância de cada trecho, então a velocidade é constante.
- */
-function travelPath(a: Point, b: Point, p: number): Point {
-  const bottomA = { x: a.x, y: FLOOR_Y };
-  const bottomB = { x: b.x, y: FLOOR_Y };
-
-  const descent = FLOOR_Y - a.y;
-  const walk = Math.abs(b.x - a.x);
-  const climb = FLOOR_Y - b.y;
-  const total = descent + walk + climb;
-  if (total === 0) return a;
-
-  const endOfDescent = descent / total;
-  const endOfWalk = (descent + walk) / total;
-
-  if (p <= endOfDescent) {
-    return lerpPoint(a, bottomA, descent === 0 ? 1 : p / endOfDescent);
-  }
-  if (p <= endOfWalk) {
-    return lerpPoint(bottomA, bottomB, walk === 0 ? 1 : (p - endOfDescent) / (endOfWalk - endOfDescent));
-  }
-  return lerpPoint(bottomB, b, climb === 0 ? 1 : (p - endOfWalk) / (1 - endOfWalk));
+  return pt(CENTER + Math.cos(rad) * radius, CENTER + Math.sin(rad) * radius);
 }
 
 function handPath(len: number, width: number) {
@@ -105,21 +74,46 @@ function steppedHourAngle(date: Date) {
   return (h + m / 60) * 30;
 }
 
-/** Trabalhando: a ferramenta manda no corpo. Andando/parado: o corpo manda na ferramenta. */
-type Pose = { kind: "work"; tool: Point } | { kind: "travel"; foot: Point; walking: boolean };
+/** Onde ele se posta para alcançar um ponto: ao lado e abaixo, com o cabo do rodo cobrindo o resto. */
+function anchorFor(tool: Point): Point {
+  const side = tool.x >= CENTER ? 1 : -1;
+  const x = clamp(tool.x + side * 16, X_MIN, X_MAX);
+  const top = FLOOR_Y - LADDER_LEN + RUNG;
+  return pt(x, clamp(tool.y + 30, top, FLOOR_Y));
+}
+
+type Actor = {
+  act: "walk" | "climb" | "work";
+  x: number;
+  feetY: number;
+  tool: Point | null;
+  facing: number;
+};
 
 type Residue = { angle: number; from: number; to: number; width: number };
 
-type Frame = {
+type Stage = {
   minuteAngle: number;
   minuteLen: number;
   hourAngle: number;
   hourLen: number;
-  pose: Pose;
   residue: Residue | null;
+  actor: Actor | null;
 };
 
-function computeFrame(now: Date): Frame {
+/**
+ * Roteiro de um minuto. O ponteiro dos minutos é apagado da ponta para o centro
+ * nos últimos 4s e repintado do centro para fora nos primeiros 6s do minuto
+ * seguinte, então o rodo cruza o centro exatamente na virada e a troca de
+ * ângulo não tem salto. Terminado o serviço ele desce, empurra a escada para
+ * fora do mostrador e some — o relógio fica limpo por meio minuto até ele
+ * voltar. De 12 em 12 minutos o ponteiro das horas entra no mesmo ritual, e a
+ * ausência encurta.
+ *
+ * Cada quadro é função pura do relógio: nada acumula erro nem trava se a aba
+ * for suspensa.
+ */
+function computeStage(now: Date): Stage {
   const minutes = now.getMinutes();
   const t = now.getSeconds() + now.getMilliseconds() / 1000;
 
@@ -129,77 +123,357 @@ function computeFrame(now: Date): Frame {
   const hourJob = minutes % HOUR_STEP_MIN === 0 && hourNew !== hourOld;
 
   const minuteTip = pointAt(minuteAngle, MINUTE_LEN);
-  const hourTipOld = pointAt(hourOld, HOUR_LEN);
-  const hourTipNew = pointAt(hourNew, HOUR_LEN);
+  const minuteAnchor = anchorFor(minuteTip);
 
-  const frame: Frame = {
+  const stage: Stage = {
     minuteAngle,
     minuteLen: MINUTE_LEN,
     hourAngle: hourNew,
     hourLen: HOUR_LEN,
-    pose: { kind: "travel", foot: STAND, walking: false },
     residue: null,
+    actor: null,
   };
 
-  if (t < 4) {
-    // Pintando o ponteiro dos minutos, do centro para fora.
-    frame.minuteLen = MINUTE_LEN * (t / 4);
-    frame.pose = { kind: "work", tool: pointAt(minuteAngle, frame.minuteLen) };
-    if (hourJob) frame.hourAngle = hourOld;
-  } else if (hourJob && t < 21) {
-    frame.hourAngle = hourOld;
-    if (t < 10) {
-      // Indo do ponteiro dos minutos até o das horas.
-      const foot = travelPath(footFor(minuteTip), footFor(hourTipOld), (t - 4) / 6);
-      frame.pose = { kind: "travel", foot, walking: true };
-    } else if (t < 14) {
-      // Apagando o ponteiro das horas.
-      frame.hourLen = HOUR_LEN * (1 - (t - 10) / 4);
-      frame.pose = { kind: "work", tool: pointAt(hourOld, frame.hourLen) };
-      frame.residue = { angle: hourOld, from: frame.hourLen, to: HOUR_LEN, width: HOUR_W };
-    } else if (t < 18) {
-      // Repintando o ponteiro das horas na posição nova.
-      frame.hourAngle = hourNew;
-      frame.hourLen = HOUR_LEN * ((t - 14) / 4);
-      frame.pose = { kind: "work", tool: pointAt(hourNew, frame.hourLen) };
-    } else {
-      // Voltando para o balde.
-      frame.hourAngle = hourNew;
-      const foot = travelPath(footFor(hourTipNew), STAND, (t - 18) / 3);
-      frame.pose = { kind: "travel", foot, walking: true };
-    }
-  } else if (t < 7) {
-    // Voltando do ponteiro dos minutos para o balde.
-    const foot = travelPath(footFor(minuteTip), STAND, (t - 4) / 3);
-    frame.pose = { kind: "travel", foot, walking: true };
-  } else if (t < 52) {
-    frame.pose = { kind: "travel", foot: STAND, walking: false };
-  } else if (t < 57) {
-    // Indo até a ponta do ponteiro dos minutos com o rodo.
-    const foot = travelPath(STAND, footFor(minuteTip), (t - 52) / 5);
-    frame.pose = { kind: "travel", foot, walking: true };
-  } else {
-    // Apagando o ponteiro dos minutos, da ponta para o centro.
-    frame.minuteLen = MINUTE_LEN * (1 - (t - 57) / 3);
-    frame.pose = { kind: "work", tool: pointAt(minuteAngle, frame.minuteLen) };
-    frame.residue = { angle: minuteAngle, from: frame.minuteLen, to: MINUTE_LEN, width: MINUTE_W };
+  const work = (tool: Point) => {
+    const anchor = anchorFor(tool);
+    stage.actor = {
+      act: "work",
+      x: anchor.x,
+      feetY: anchor.y,
+      tool,
+      facing: tool.x >= CENTER ? -1 : 1,
+    };
+  };
+  const climb = (x: number, fromY: number, toY: number, p: number) => {
+    stage.actor = { act: "climb", x, feetY: lerp(fromY, toY, p), tool: null, facing: 1 };
+  };
+  const walk = (fromX: number, toX: number, p: number) => {
+    stage.actor = {
+      act: "walk",
+      x: lerp(fromX, toX, p),
+      feetY: FLOOR_Y,
+      tool: null,
+      facing: toX >= fromX ? 1 : -1,
+    };
+  };
+
+  // --- serviço no ponteiro dos minutos, começando na virada ----------------
+  if (t < 6) {
+    stage.minuteLen = MINUTE_LEN * (t / 6);
+    if (hourJob) stage.hourAngle = hourOld;
+    work(pointAt(minuteAngle, stage.minuteLen));
+    return stage;
   }
 
-  return frame;
+  if (hourJob) {
+    const oldAnchor = anchorFor(pointAt(hourOld, HOUR_LEN));
+    const newAnchor = anchorFor(pointAt(hourNew, HOUR_LEN));
+    if (t < 18) stage.hourAngle = hourOld;
+
+    if (t < 9.5) {
+      climb(minuteAnchor.x, minuteAnchor.y, FLOOR_Y, (t - 6) / 3.5);
+    } else if (t < 14) {
+      walk(minuteAnchor.x, oldAnchor.x, (t - 9.5) / 4.5);
+    } else if (t < 18) {
+      climb(oldAnchor.x, FLOOR_Y, oldAnchor.y, (t - 14) / 4);
+    } else if (t < 23) {
+      stage.hourLen = HOUR_LEN * (1 - (t - 18) / 5);
+      stage.residue = { angle: hourOld, from: stage.hourLen, to: HOUR_LEN, width: HOUR_W };
+      work(pointAt(hourOld, stage.hourLen));
+    } else if (t < 29) {
+      stage.hourLen = HOUR_LEN * ((t - 23) / 6);
+      work(pointAt(hourNew, stage.hourLen));
+    } else if (t < 32.5) {
+      climb(newAnchor.x, newAnchor.y, FLOOR_Y, (t - 29) / 3.5);
+    } else if (t < 37.5) {
+      walk(newAnchor.x, OFFSTAGE_X, (t - 32.5) / 5);
+    }
+    if (t < 44) return stage;
+  } else {
+    if (t < 9.5) {
+      climb(minuteAnchor.x, minuteAnchor.y, FLOOR_Y, (t - 6) / 3.5);
+      return stage;
+    }
+    if (t < 14.5) {
+      walk(minuteAnchor.x, OFFSTAGE_X, (t - 9.5) / 5);
+      return stage;
+    }
+    if (t < 44) return stage;
+  }
+
+  // --- volta para apagar o ponteiro do minuto que está acabando ------------
+  if (t < 50.5) {
+    walk(OFFSTAGE_X, minuteAnchor.x, (t - 44) / 6.5);
+  } else if (t < 56) {
+    climb(minuteAnchor.x, FLOOR_Y, minuteAnchor.y, (t - 50.5) / 5.5);
+  } else {
+    stage.minuteLen = MINUTE_LEN * (1 - (t - 56) / 4);
+    stage.residue = { angle: minuteAngle, from: stage.minuteLen, to: MINUTE_LEN, width: MINUTE_W };
+    work(pointAt(minuteAngle, stage.minuteLen));
+  }
+  return stage;
+}
+
+/**
+ * Cinemática de dois ossos: dado o quadril e o pé, acha o joelho. `dirX` diz
+ * para que lado a articulação dobra em coordenadas do mundo — joelho para a
+ * frente, cotovelo para trás — em vez de depender da perpendicular, que
+ * inverte de lado assim que o pé passa da altura do quadril.
+ */
+function limb(root: Point, target: Point, l1: number, l2: number, dirX: number, toeDir: number): Point[] {
+  let dx = target.x - root.x;
+  let dy = target.y - root.y;
+  let d = Math.hypot(dx, dy);
+  const max = l1 + l2 - 0.01;
+  let end = target;
+  if (d > max) {
+    dx *= max / d;
+    dy *= max / d;
+    end = pt(root.x + dx, root.y + dy);
+    d = max;
+  }
+  if (d < 0.01) d = 0.01;
+
+  const m = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - m * m));
+  const ux = dx / d;
+  const uy = dy / d;
+  let nx = -uy;
+  let ny = ux;
+  if (nx * dirX < 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+
+  const joint = pt(root.x + ux * m + nx * h, root.y + uy * m + ny * h);
+  const chain = [root, joint, end];
+  if (toeDir) chain.push(pt(end.x + toeDir * 2.9, end.y + 0.4));
+  return chain;
+}
+
+/**
+ * Passada sem patinar: o compasso vem da posição no mostrador, não do relógio.
+ * Cada pé fica cravado num ponto fixo do chão durante metade do ciclo e só
+ * então avança — por isso o pé nunca escorrega enquanto o corpo passa por cima.
+ */
+function walkFeet(x: number): Point[] {
+  const s = x / STRIDE;
+  const feet: Point[] = [];
+  for (let i = 0; i < 2; i++) {
+    const p = s + 0.5 * i;
+    const k = Math.floor(p);
+    const u = p - k;
+    if (u < 0.5) {
+      feet.push(pt((k + 0.25) * STRIDE, FLOOR_Y));
+    } else {
+      const q = (u - 0.5) * 2;
+      const fx = lerp((k + 0.25) * STRIDE, (k + 1.25) * STRIDE, q);
+      feet.push(pt(fx, FLOOR_Y - STEP_LIFT * Math.sin(Math.PI * q)));
+    }
+  }
+  return feet;
+}
+
+/** Subida degrau a degrau: mesma lógica da passada, na vertical e travada nos degraus. */
+function climbFeet(x: number, feetY: number): Point[] {
+  const s = (FLOOR_Y - feetY) / RUNG;
+  const feet: Point[] = [];
+  for (let i = 0; i < 2; i++) {
+    const p = s + 0.5 * i;
+    const k = Math.floor(p);
+    const u = p - k;
+    const lateral = i === 0 ? -3.2 : 3.2;
+    if (u < 0.5) {
+      feet.push(pt(x + lateral, FLOOR_Y - (k + 0.25) * RUNG));
+    } else {
+      const q = (u - 0.5) * 2;
+      const fy = lerp(FLOOR_Y - (k + 0.25) * RUNG, FLOOR_Y - (k + 1.25) * RUNG, q);
+      feet.push(pt(x + lateral + Math.sin(Math.PI * q) * 2.2, fy));
+    }
+  }
+  return feet;
+}
+
+type Skeleton = {
+  legs: Point[][];
+  torso: Point[];
+  head: Point;
+  arms: Point[][];
+  pole: Point[];
+  brush: Point[];
+  ladderX: number;
+};
+
+function buildSkeleton(actor: Actor): Skeleton {
+  const facing = actor.facing;
+  let feet: Point[];
+  let hip: Point;
+  let shoulder: Point;
+  let handRail: Point;
+  let handTool: Point;
+  let poleTip: Point;
+  let kneeDir: number;
+  let elbowDir: number;
+
+  if (actor.act === "walk") {
+    feet = walkFeet(actor.x);
+    const s = actor.x / STRIDE;
+    // O quadril sobe quando as pernas se juntam e desce na passada aberta.
+    hip = pt(actor.x, FLOOR_Y - HIP_H + 0.9 * Math.abs(Math.sin(2 * Math.PI * s)));
+    shoulder = pt(hip.x + facing * 0.9, hip.y - TORSO);
+    handRail = pt(actor.x + facing * RAIL, shoulder.y + 2.5);
+    // Rodo carregado em pé, ao lado do corpo, longe do balde.
+    handTool = pt(actor.x - facing * 3.8, hip.y - 3);
+    poleTip = pt(handTool.x - facing * 1.8, handTool.y - POLE);
+    kneeDir = facing;
+    elbowDir = -facing;
+  } else if (actor.act === "climb") {
+    feet = climbFeet(actor.x, actor.feetY);
+    // O quadril acompanha os pés, não a altura teórica: eles estão travados em
+    // degraus e podem estar a até um degrau um do outro.
+    hip = pt(actor.x - 0.6, (feet[0].y + feet[1].y) / 2 - HIP_H * 0.78);
+    shoulder = pt(hip.x, hip.y - TORSO);
+    // A mão livre agarra o degrau mais próximo de um braço acima do ombro; como
+    // o degrau é um nível fixo, ela troca de degrau sozinha durante a subida.
+    const grabY = FLOOR_Y - Math.round((FLOOR_Y - (shoulder.y - 9)) / RUNG) * RUNG;
+    handRail = pt(actor.x + RAIL, grabY);
+    handTool = pt(actor.x - 5.5, shoulder.y + 6);
+    poleTip = pt(handTool.x - 1.2, handTool.y + POLE);
+    kneeDir = 1;
+    elbowDir = -1;
+  } else {
+    // Trabalhando: pés firmes em degraus vizinhos, corpo inclinado para o
+    // serviço, um braço no montante e o outro no cabo do rodo.
+    const tool = actor.tool ?? pt(actor.x, actor.feetY);
+    feet = [pt(actor.x - 3.2, actor.feetY), pt(actor.x + 3.2, actor.feetY - 0.6)];
+    hip = pt(actor.x - facing * 1.2, actor.feetY - HIP_H);
+    shoulder = pt(hip.x + facing * 2.2, hip.y - TORSO);
+    handRail = pt(actor.x - facing * RAIL, shoulder.y + 4);
+    const dx = tool.x - shoulder.x;
+    const dy = tool.y - shoulder.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const grip = clamp(dist - POLE, 2.5, UPPER_ARM + FOREARM - 0.6);
+    handTool = pt(shoulder.x + (dx / dist) * grip, shoulder.y + (dy / dist) * grip);
+    poleTip = tool;
+    kneeDir = facing;
+    elbowDir = -facing;
+  }
+
+  const px = poleTip.x - handTool.x;
+  const py = poleTip.y - handTool.y;
+  const plen = Math.hypot(px, py) || 1;
+
+  return {
+    legs: [
+      limb(hip, feet[0], THIGH, SHIN, kneeDir, facing),
+      limb(hip, feet[1], THIGH, SHIN, kneeDir, facing),
+    ],
+    torso: [hip, shoulder],
+    head: pt(shoulder.x + facing * 0.6, shoulder.y - HEAD_R - 1.1),
+    arms: [
+      limb(shoulder, handRail, UPPER_ARM, FOREARM, elbowDir, 0),
+      limb(shoulder, handTool, UPPER_ARM, FOREARM, elbowDir, 0),
+    ],
+    pole: [handTool, poleTip],
+    brush: [
+      pt(poleTip.x + (py / plen) * 3.4, poleTip.y - (px / plen) * 3.4),
+      pt(poleTip.x - (py / plen) * 3.4, poleTip.y + (px / plen) * 3.4),
+    ],
+    ladderX: actor.x,
+  };
+}
+
+const toPoints = (chain: Point[]) => chain.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
+
+/**
+ * Desenha o pintor. Na passada `halo` tudo sai da cor do mostrador e mais
+ * grosso, formando um contorno — sem ele a figura some quando cruza os
+ * ponteiros, que são da mesma cor escura.
+ */
+function PainterLayer({ skel, halo }: { skel: Skeleton; halo?: boolean }) {
+  const grow = halo ? 2.8 : 0;
+  const cloth = halo ? FACE : OVERALLS;
+  const dark = halo ? FACE : INK;
+  const chain = {
+    fill: "none" as const,
+    stroke: cloth,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <g>
+      <polyline {...chain} strokeWidth={2.9 + grow} points={toPoints(skel.legs[0])} />
+      <polyline {...chain} strokeWidth={2.9 + grow} points={toPoints(skel.legs[1])} />
+      <polyline {...chain} strokeWidth={6.4 + grow} points={toPoints(skel.torso)} />
+      <polyline {...chain} strokeWidth={2.5 + grow} points={toPoints(skel.arms[0])} />
+      <polyline {...chain} strokeWidth={2.5 + grow} points={toPoints(skel.arms[1])} />
+      <circle cx={skel.head.x} cy={skel.head.y} r={HEAD_R} fill={dark} stroke={dark} strokeWidth={grow} />
+      <line
+        x1={skel.pole[0].x}
+        y1={skel.pole[0].y}
+        x2={skel.pole[1].x}
+        y2={skel.pole[1].y}
+        stroke={dark}
+        strokeWidth={1.3 + grow}
+        strokeLinecap="round"
+      />
+      <line
+        x1={skel.brush[0].x}
+        y1={skel.brush[0].y}
+        x2={skel.brush[1].x}
+        y2={skel.brush[1].y}
+        stroke={dark}
+        strokeWidth={2.2 + grow}
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
+/**
+ * Escada desenhada com a base na origem: depois é só transladar para o pé dela
+ * pousar no chão. O balde vai pendurado num degrau, então sai de cena junto.
+ */
+function Ladder({ x }: { x: number }) {
+  const rungs = useMemo(() => {
+    const list: number[] = [];
+    for (let r = RUNG; r <= LADDER_LEN - RUNG; r += RUNG) list.push(r);
+    return list;
+  }, []);
+
+  return (
+    <g transform={`translate(${x.toFixed(2)} ${FLOOR_Y})`}>
+      <g stroke={METAL} strokeLinecap="round" opacity="0.75">
+        <line x1={-RAIL} y1={0} x2={-RAIL + 0.8} y2={-LADDER_LEN} strokeWidth="1.6" />
+        <line x1={RAIL} y1={0} x2={RAIL - 0.8} y2={-LADDER_LEN} strokeWidth="1.6" />
+        {rungs.map((r) => {
+          const taper = (r / LADDER_LEN) * 0.8;
+          return (
+            <line key={r} x1={-RAIL + taper} y1={-r} x2={RAIL - taper} y2={-r} strokeWidth="1" />
+          );
+        })}
+        <circle cx={-RAIL} cy={1.8} r="1.7" fill={METAL} stroke="none" />
+        <circle cx={RAIL} cy={1.8} r="1.7" fill={METAL} stroke="none" />
+      </g>
+      <path d="M -10.8 -12 L -9.5 -6 L -3.7 -6 L -2.4 -12 Z" fill={INK} opacity="0.85" />
+      <line x1={-6.6} y1={-12} x2={-4.6} y2={-RUNG * 2} stroke={INK} strokeWidth="0.7" opacity="0.7" />
+    </g>
+  );
 }
 
 /** Só vale gastar 30fps enquanto o pintor está em cena. */
-function isBusy(now: Date) {
+function onStage(now: Date) {
   const t = now.getSeconds();
-  if (t >= 52 || t < 8) return true;
-  return now.getMinutes() % HOUR_STEP_MIN === 0 && t < 22;
+  if (t < 15 || t >= 44) return true;
+  return now.getMinutes() % HOUR_STEP_MIN === 0 && t < 38;
 }
 
 /**
  * Devolve `null` até o primeiro quadro no cliente: a página é pré-renderizada,
  * então marcar a hora no servidor quebraria a hidratação.
  */
-function useAnimationClock() {
+function useAnimationClock(reduceMotion: boolean) {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -209,7 +483,7 @@ function useAnimationClock() {
     const loop = (timestamp: number) => {
       raf = requestAnimationFrame(loop);
       const current = new Date();
-      const interval = isBusy(current) ? 33 : 500;
+      const interval = !reduceMotion && onStage(current) ? 33 : 500;
       if (timestamp - lastCommit < interval) return;
       lastCommit = timestamp;
       setNow(current);
@@ -217,9 +491,23 @@ function useAnimationClock() {
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [reduceMotion]);
 
   return now;
+}
+
+function useReducedMotion() {
+  const [reduce, setReduce] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduce(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
+  return reduce;
 }
 
 function useIdle(delay: number) {
@@ -257,8 +545,8 @@ function useWakeLock() {
           sentinel = await navigator.wakeLock.request("screen");
         }
       } catch {
-        // Sem suporte ou negado — o relógio segue funcionando, só não impede
-        // o monitor de dormir sozinho.
+        // Sem suporte ou negado — o relógio segue funcionando, só não impede o
+        // monitor de dormir sozinho.
       }
     };
 
@@ -298,200 +586,15 @@ function useFullscreen() {
 
 const HOUR_TICKS = Array.from({ length: 12 }, (_, i) => i);
 
-const INK = "#1a1a1a";
-const OVERALLS = "#2c4a78";
-const FACE = "#f2ede1";
-const METAL = "#8b929c";
-
-type Rig = {
-  bodyX: number;
-  feetY: number;
-  side: number;
-  swing: number;
-  tool: Point;
-};
-
-function buildRig(pose: Pose, phase: number): Rig {
-  if (pose.kind === "work") {
-    const foot = footFor(pose.tool);
-    return {
-      bodyX: foot.x,
-      feetY: foot.y,
-      side: pose.tool.x >= CENTER ? 1 : -1,
-      swing: 1.6,
-      tool: pose.tool,
-    };
-  }
-
-  const bodyX = clamp(pose.foot.x, BODY_X_MIN, BODY_X_MAX);
-  const feetY = clamp(pose.foot.y, LADDER_TOP_Y + 6, FLOOR_Y);
-  const side = bodyX >= CENTER ? 1 : -1;
-  return {
-    bodyX,
-    feetY,
-    side,
-    // Rodo carregado junto ao quadril enquanto anda ou espera.
-    swing: pose.walking ? Math.sin(phase * 9) * 4 : 1.6,
-    tool: { x: bodyX + side * 7, y: feetY - 11 },
-  };
-}
-
-/**
- * Escada com rodízios, de altura fixa, que acompanha o pintor pelo mostrador.
- * É ela que sustenta a figura: os pés dele pousam sempre num degrau, em vez de
- * ficarem no ar. Fica na frente dos ponteiros (a tinta está na parede, a escada
- * está diante dela) e atrás do pintor.
- */
-function Ladder({ x }: { x: number }) {
-  const railX = (y: number, sign: number) => {
-    const p = (y - LADDER_TOP_Y) / (FLOOR_Y - LADDER_TOP_Y);
-    return x + sign * (3.4 + 1.4 * p);
-  };
-
-  const rungs: number[] = [];
-  for (let y = LADDER_TOP_Y + 9; y <= FLOOR_Y - 7; y += 11) rungs.push(y);
-
-  return (
-    <g stroke={METAL} strokeLinecap="round" opacity="0.75">
-      <line
-        x1={railX(LADDER_TOP_Y, -1)}
-        y1={LADDER_TOP_Y}
-        x2={railX(FLOOR_Y, -1)}
-        y2={FLOOR_Y}
-        strokeWidth="1.6"
-      />
-      <line
-        x1={railX(LADDER_TOP_Y, 1)}
-        y1={LADDER_TOP_Y}
-        x2={railX(FLOOR_Y, 1)}
-        y2={FLOOR_Y}
-        strokeWidth="1.6"
-      />
-      {rungs.map((y) => (
-        <line key={y} x1={railX(y, -1)} y1={y} x2={railX(y, 1)} y2={y} strokeWidth="1.1" />
-      ))}
-      <circle cx={railX(FLOOR_Y, -1)} cy={FLOOR_Y + 1.8} r="1.7" fill={METAL} stroke="none" />
-      <circle cx={railX(FLOOR_Y, 1)} cy={FLOOR_Y + 1.8} r="1.7" fill={METAL} stroke="none" />
-    </g>
-  );
-}
-
-/**
- * Desenha o pintor. Na passada `halo` tudo sai da cor do mostrador e mais
- * grosso, formando um contorno — sem ele a figura some quando cruza os
- * ponteiros, que são da mesma cor escura.
- */
-function PainterBody({ rig, halo }: { rig: Rig; halo?: boolean }) {
-  const { bodyX, feetY, side, swing, tool } = rig;
-  const hipY = feetY - 12;
-  const shoulderY = feetY - 23;
-  const headY = feetY - 28;
-
-  const grow = halo ? 2.6 : 0;
-  const paint = (color: string) => (halo ? FACE : color);
-
-  const armDx = tool.x - bodyX;
-  const armDy = tool.y - shoulderY;
-  const armLen = Math.hypot(armDx, armDy) || 1;
-  const perp = { x: (-armDy / armLen) * 3.6, y: (armDx / armLen) * 3.6 };
-
-  return (
-    <g>
-      {/* pernas */}
-      <line
-        x1={bodyX}
-        y1={hipY}
-        x2={bodyX - swing}
-        y2={feetY}
-        stroke={paint(OVERALLS)}
-        strokeWidth={2.8 + grow}
-        strokeLinecap="round"
-      />
-      <line
-        x1={bodyX}
-        y1={hipY}
-        x2={bodyX + swing}
-        y2={feetY}
-        stroke={paint(OVERALLS)}
-        strokeWidth={2.8 + grow}
-        strokeLinecap="round"
-      />
-
-      {/* tronco de macacão */}
-      <line
-        x1={bodyX}
-        y1={shoulderY - 1}
-        x2={bodyX}
-        y2={hipY}
-        stroke={paint(OVERALLS)}
-        strokeWidth={7 + grow}
-        strokeLinecap="round"
-      />
-
-      {/* braço livre */}
-      <line
-        x1={bodyX}
-        y1={shoulderY + 1}
-        x2={bodyX - side * 3.5}
-        y2={shoulderY + 10}
-        stroke={paint(OVERALLS)}
-        strokeWidth={2.4 + grow}
-        strokeLinecap="round"
-      />
-
-      {/* braço de trabalho + rodo */}
-      <line
-        x1={bodyX}
-        y1={shoulderY}
-        x2={tool.x}
-        y2={tool.y}
-        stroke={paint(OVERALLS)}
-        strokeWidth={2.4 + grow}
-        strokeLinecap="round"
-      />
-      <line
-        x1={tool.x - perp.x}
-        y1={tool.y - perp.y}
-        x2={tool.x + perp.x}
-        y2={tool.y + perp.y}
-        stroke={paint(INK)}
-        strokeWidth={1.8 + grow}
-        strokeLinecap="round"
-      />
-
-      {/* cabeça */}
-      <circle cx={bodyX} cy={headY} r={3.4} fill={paint(INK)} stroke={paint(INK)} strokeWidth={grow} />
-    </g>
-  );
-}
-
-/** Pintor de macacão que apaga e repinta os ponteiros. */
-function Painter({ pose, phase }: { pose: Pose; phase: number }) {
-  const rig = buildRig(pose, phase);
-
-  return (
-    <g>
-      {/* balde de tinta, sempre no chão junto ao lugar de descanso */}
-      <path
-        d={`M ${STAND.x - 14} ${STAND.y - 5} L ${STAND.x - 12.6} ${STAND.y} L ${STAND.x - 6.4} ${STAND.y} L ${STAND.x - 5} ${STAND.y - 5} Z`}
-        fill={INK}
-        opacity="0.85"
-      />
-      <Ladder x={rig.bodyX} />
-      <PainterBody rig={rig} halo />
-      <PainterBody rig={rig} />
-    </g>
-  );
-}
-
 export default function SchipholClock() {
-  const now = useAnimationClock();
+  const reduceMotion = useReducedMotion();
+  const now = useAnimationClock(reduceMotion);
   const idle = useIdle(IDLE_DELAY_MS);
   const { isFullscreen, toggle } = useFullscreen();
   useWakeLock();
 
-  const frame = now ? computeFrame(now) : null;
-  const phase = now ? now.getSeconds() + now.getMilliseconds() / 1000 : 0;
+  const stage = now ? computeStage(now) : null;
+  const skeleton = stage?.actor ? buildSkeleton(stage.actor) : null;
   const digital = now
     ? `${String(now.getHours() % 12 || 12).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(
         now.getSeconds(),
@@ -503,7 +606,7 @@ export default function SchipholClock() {
       className="relative flex h-full min-h-screen w-full flex-col items-center justify-center gap-4 bg-[#0d0d0d]"
       style={{ cursor: idle ? "none" : "default" }}
     >
-      <svg viewBox="0 0 200 200" className="aspect-square h-full max-h-[85vh] w-auto max-w-full">
+      <svg viewBox="0 0 200 200" className="aspect-square h-full max-h-[85vh] w-auto max-w-full" aria-hidden="true">
         <defs>
           <filter id="brush" x="-30%" y="-30%" width="160%" height="160%">
             <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="7" result="noise" />
@@ -514,56 +617,60 @@ export default function SchipholClock() {
           </clipPath>
         </defs>
 
-        {/* mostrador */}
         <circle cx={CENTER} cy={CENTER} r={FACE_R} fill={FACE} />
         <circle cx={CENTER} cy={CENTER} r={FACE_R} fill="none" stroke="#0d0d0d" strokeWidth="0.75" opacity="0.15" />
 
         <g clipPath="url(#face-clip)">
           {HOUR_TICKS.map((i) => {
-            const isCardinal = i % 3 === 0;
+            const cardinal = i % 3 === 0;
             return (
               <line
                 key={i}
                 x1={CENTER}
-                y1={isCardinal ? 10 : 13}
+                y1={cardinal ? 10 : 13}
                 x2={CENTER}
                 y2={19}
                 stroke={INK}
-                strokeWidth={isCardinal ? 2.6 : 1.4}
+                strokeWidth={cardinal ? 2.6 : 1.4}
                 strokeLinecap="round"
                 transform={`rotate(${i * 30} ${CENTER} ${CENTER})`}
               />
             );
           })}
 
-          {frame && (
+          {stage && (
             <>
-              {/* tinta que ainda não saiu de todo, logo atrás do rodo */}
-              {frame.residue && (
-                <g transform={`rotate(${frame.residue.angle} ${CENTER} ${CENTER})`} opacity="0.2" filter="url(#brush)">
+              {stage.residue && (
+                <g transform={`rotate(${stage.residue.angle} ${CENTER} ${CENTER})`} opacity="0.2" filter="url(#brush)">
                   <line
                     x1={CENTER}
-                    y1={CENTER - frame.residue.from}
+                    y1={CENTER - stage.residue.from}
                     x2={CENTER}
-                    y2={CENTER - frame.residue.to}
+                    y2={CENTER - stage.residue.to}
                     stroke={INK}
-                    strokeWidth={frame.residue.width * 1.8}
+                    strokeWidth={stage.residue.width * 1.8}
                     strokeLinecap="round"
                   />
                 </g>
               )}
 
-              <g transform={`rotate(${frame.hourAngle} ${CENTER} ${CENTER})`}>
-                <path d={handPath(frame.hourLen, HOUR_W)} fill={INK} filter="url(#brush)" />
+              <g transform={`rotate(${stage.hourAngle} ${CENTER} ${CENTER})`}>
+                <path d={handPath(stage.hourLen, HOUR_W)} fill={INK} filter="url(#brush)" />
               </g>
 
-              <g transform={`rotate(${frame.minuteAngle} ${CENTER} ${CENTER})`}>
-                <path d={handPath(frame.minuteLen, MINUTE_W)} fill={INK} filter="url(#brush)" />
+              <g transform={`rotate(${stage.minuteAngle} ${CENTER} ${CENTER})`}>
+                <path d={handPath(stage.minuteLen, MINUTE_W)} fill={INK} filter="url(#brush)" />
               </g>
 
               <circle cx={CENTER} cy={CENTER} r="3" fill={INK} />
 
-              <Painter pose={frame.pose} phase={phase} />
+              {skeleton && (
+                <>
+                  <Ladder x={skeleton.ladderX} />
+                  <PainterLayer skel={skeleton} halo />
+                  <PainterLayer skel={skeleton} />
+                </>
+              )}
             </>
           )}
         </g>
