@@ -2,15 +2,188 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const SETTLE_TRANSITION = "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+const CENTER = 100;
+const FACE_R = 94;
+const MINUTE_LEN = 78;
+const HOUR_LEN = 50;
+const MINUTE_W = 2.3;
+const HOUR_W = 3.1;
+
+/** Onde o pintor fica de pé entre um serviço e outro, junto do balde. */
+const STAND = { x: 46, y: 158 };
 const IDLE_DELAY_MS = 3000;
 
-function useNow() {
-  const [now, setNow] = useState(() => new Date());
+/**
+ * O ponteiro dos minutos é apagado da ponta para o centro nos últimos 3s do
+ * minuto e repintado do centro para fora nos primeiros 4s do minuto seguinte —
+ * o rodo passa pelo centro exatamente na virada, então a troca de ângulo não
+ * tem salto visível. O ponteiro das horas anda de 12 em 12 minutos e é
+ * refeito do mesmo jeito.
+ */
+const HOUR_STEP_MIN = 12;
+
+const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
+type Point = { x: number; y: number };
+
+function pointAt(angleDeg: number, radius: number): Point {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: CENTER + Math.cos(rad) * radius, y: CENTER + Math.sin(rad) * radius };
+}
+
+/** Onde os pés ficam para a mão alcançar `tool`. */
+function footFor(tool: Point): Point {
+  const side = tool.x >= CENTER ? 1 : -1;
+  return { x: clamp(tool.x + side * 13, 20, 180), y: clamp(tool.y + 27, 36, 180) };
+}
+
+/** Trajeto do pintor: arco por fora, para ele não atravessar o centro do mostrador. */
+function walkBetween(a: Point, b: Point, p: number): Point {
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const dx = mid.x - CENTER;
+  const dy = mid.y - CENTER;
+  const dist = Math.hypot(dx, dy) || 1;
+  const reach = Math.min(dist + 26, 62);
+  const control = { x: CENTER + (dx / dist) * reach, y: CENTER + (dy / dist) * reach };
+  const q = 1 - p;
+  return {
+    x: q * q * a.x + 2 * q * p * control.x + p * p * b.x,
+    y: q * q * a.y + 2 * q * p * control.y + p * p * b.y,
+  };
+}
+
+function handPath(len: number, width: number) {
+  if (len < 1.5) return "";
+  const tip = CENTER - len;
+  return [
+    `M ${CENTER - width} ${CENTER}`,
+    `L ${CENTER - width * 0.5} ${tip + 1.5}`,
+    `L ${CENTER} ${tip - 1.5}`,
+    `L ${CENTER + width * 0.5} ${tip + 1.5}`,
+    `L ${CENTER + width} ${CENTER}`,
+    "Z",
+  ].join(" ");
+}
+
+/** Ângulo do ponteiro das horas, que só muda a cada HOUR_STEP_MIN minutos. */
+function steppedHourAngle(date: Date) {
+  const h = date.getHours() % 12;
+  const m = Math.floor(date.getMinutes() / HOUR_STEP_MIN) * HOUR_STEP_MIN;
+  return (h + m / 60) * 30;
+}
+
+/** Trabalhando: a ferramenta manda no corpo. Andando/parado: o corpo manda na ferramenta. */
+type Pose = { kind: "work"; tool: Point } | { kind: "travel"; foot: Point; walking: boolean };
+
+type Residue = { angle: number; from: number; to: number; width: number };
+
+type Frame = {
+  minuteAngle: number;
+  minuteLen: number;
+  hourAngle: number;
+  hourLen: number;
+  pose: Pose;
+  residue: Residue | null;
+};
+
+function computeFrame(now: Date): Frame {
+  const minutes = now.getMinutes();
+  const t = now.getSeconds() + now.getMilliseconds() / 1000;
+
+  const minuteAngle = minutes * 6;
+  const hourNew = steppedHourAngle(now);
+  const hourOld = steppedHourAngle(new Date(now.getTime() - HOUR_STEP_MIN * 60_000));
+  const hourJob = minutes % HOUR_STEP_MIN === 0 && hourNew !== hourOld;
+
+  const minuteTip = pointAt(minuteAngle, MINUTE_LEN);
+  const hourTipOld = pointAt(hourOld, HOUR_LEN);
+  const hourTipNew = pointAt(hourNew, HOUR_LEN);
+
+  const frame: Frame = {
+    minuteAngle,
+    minuteLen: MINUTE_LEN,
+    hourAngle: hourNew,
+    hourLen: HOUR_LEN,
+    pose: { kind: "travel", foot: STAND, walking: false },
+    residue: null,
+  };
+
+  if (t < 4) {
+    // Pintando o ponteiro dos minutos, do centro para fora.
+    frame.minuteLen = MINUTE_LEN * (t / 4);
+    frame.pose = { kind: "work", tool: pointAt(minuteAngle, frame.minuteLen) };
+    if (hourJob) frame.hourAngle = hourOld;
+  } else if (hourJob && t < 21) {
+    frame.hourAngle = hourOld;
+    if (t < 10) {
+      // Indo do ponteiro dos minutos até o das horas.
+      const foot = walkBetween(footFor(minuteTip), footFor(hourTipOld), (t - 4) / 6);
+      frame.pose = { kind: "travel", foot, walking: true };
+    } else if (t < 14) {
+      // Apagando o ponteiro das horas.
+      frame.hourLen = HOUR_LEN * (1 - (t - 10) / 4);
+      frame.pose = { kind: "work", tool: pointAt(hourOld, frame.hourLen) };
+      frame.residue = { angle: hourOld, from: frame.hourLen, to: HOUR_LEN, width: HOUR_W };
+    } else if (t < 18) {
+      // Repintando o ponteiro das horas na posição nova.
+      frame.hourAngle = hourNew;
+      frame.hourLen = HOUR_LEN * ((t - 14) / 4);
+      frame.pose = { kind: "work", tool: pointAt(hourNew, frame.hourLen) };
+    } else {
+      // Voltando para o balde.
+      frame.hourAngle = hourNew;
+      const foot = walkBetween(footFor(hourTipNew), STAND, (t - 18) / 3);
+      frame.pose = { kind: "travel", foot, walking: true };
+    }
+  } else if (t < 7) {
+    // Voltando do ponteiro dos minutos para o balde.
+    const foot = walkBetween(footFor(minuteTip), STAND, (t - 4) / 3);
+    frame.pose = { kind: "travel", foot, walking: true };
+  } else if (t < 52) {
+    frame.pose = { kind: "travel", foot: STAND, walking: false };
+  } else if (t < 57) {
+    // Indo até a ponta do ponteiro dos minutos com o rodo.
+    const foot = walkBetween(STAND, footFor(minuteTip), (t - 52) / 5);
+    frame.pose = { kind: "travel", foot, walking: true };
+  } else {
+    // Apagando o ponteiro dos minutos, da ponta para o centro.
+    frame.minuteLen = MINUTE_LEN * (1 - (t - 57) / 3);
+    frame.pose = { kind: "work", tool: pointAt(minuteAngle, frame.minuteLen) };
+    frame.residue = { angle: minuteAngle, from: frame.minuteLen, to: MINUTE_LEN, width: MINUTE_W };
+  }
+
+  return frame;
+}
+
+/** Só vale gastar 30fps enquanto o pintor está em cena. */
+function isBusy(now: Date) {
+  const t = now.getSeconds();
+  if (t >= 52 || t < 8) return true;
+  return now.getMinutes() % HOUR_STEP_MIN === 0 && t < 22;
+}
+
+/**
+ * Devolve `null` até o primeiro quadro no cliente: a página é pré-renderizada,
+ * então marcar a hora no servidor quebraria a hidratação.
+ */
+function useAnimationClock() {
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    let raf = 0;
+    let lastCommit = 0;
+
+    const loop = (timestamp: number) => {
+      raf = requestAnimationFrame(loop);
+      const current = new Date();
+      const interval = isBusy(current) ? 33 : 500;
+      if (timestamp - lastCommit < interval) return;
+      lastCommit = timestamp;
+      setNow(current);
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   return now;
@@ -51,8 +224,8 @@ function useWakeLock() {
           sentinel = await navigator.wakeLock.request("screen");
         }
       } catch {
-        // Not supported or denied — the clock still works, it just won't
-        // stop the display from sleeping on its own.
+        // Sem suporte ou negado — o relógio segue funcionando, só não impede
+        // o monitor de dormir sozinho.
       }
     };
 
@@ -92,87 +265,231 @@ function useFullscreen() {
 
 const HOUR_TICKS = Array.from({ length: 12 }, (_, i) => i);
 
+const INK = "#1a1a1a";
+const OVERALLS = "#2c4a78";
+const FACE = "#f2ede1";
+
+type Rig = {
+  bodyX: number;
+  feetY: number;
+  side: number;
+  swing: number;
+  tool: Point;
+};
+
+function buildRig(pose: Pose, phase: number): Rig {
+  if (pose.kind === "work") {
+    const foot = footFor(pose.tool);
+    return {
+      bodyX: foot.x,
+      feetY: foot.y,
+      side: pose.tool.x >= CENTER ? 1 : -1,
+      swing: 1.6,
+      tool: pose.tool,
+    };
+  }
+
+  const side = pose.foot.x >= CENTER ? 1 : -1;
+  return {
+    bodyX: pose.foot.x,
+    feetY: pose.foot.y,
+    side,
+    // Rodo carregado junto ao quadril enquanto anda ou espera.
+    swing: pose.walking ? Math.sin(phase * 9) * 4 : 1.6,
+    tool: { x: pose.foot.x + side * 7, y: pose.foot.y - 11 },
+  };
+}
+
+/**
+ * Desenha o pintor. Na passada `halo` tudo sai da cor do mostrador e mais
+ * grosso, formando um contorno — sem ele a figura some quando cruza os
+ * ponteiros, que são da mesma cor escura.
+ */
+function PainterBody({ rig, halo }: { rig: Rig; halo?: boolean }) {
+  const { bodyX, feetY, side, swing, tool } = rig;
+  const hipY = feetY - 12;
+  const shoulderY = feetY - 23;
+  const headY = feetY - 28;
+
+  const grow = halo ? 2.6 : 0;
+  const paint = (color: string) => (halo ? FACE : color);
+
+  const armDx = tool.x - bodyX;
+  const armDy = tool.y - shoulderY;
+  const armLen = Math.hypot(armDx, armDy) || 1;
+  const perp = { x: (-armDy / armLen) * 3.6, y: (armDx / armLen) * 3.6 };
+
+  return (
+    <g>
+      {/* pernas */}
+      <line
+        x1={bodyX}
+        y1={hipY}
+        x2={bodyX - swing}
+        y2={feetY}
+        stroke={paint(OVERALLS)}
+        strokeWidth={2.8 + grow}
+        strokeLinecap="round"
+      />
+      <line
+        x1={bodyX}
+        y1={hipY}
+        x2={bodyX + swing}
+        y2={feetY}
+        stroke={paint(OVERALLS)}
+        strokeWidth={2.8 + grow}
+        strokeLinecap="round"
+      />
+
+      {/* tronco de macacão */}
+      <line
+        x1={bodyX}
+        y1={shoulderY - 1}
+        x2={bodyX}
+        y2={hipY}
+        stroke={paint(OVERALLS)}
+        strokeWidth={7 + grow}
+        strokeLinecap="round"
+      />
+
+      {/* braço livre */}
+      <line
+        x1={bodyX}
+        y1={shoulderY + 1}
+        x2={bodyX - side * 3.5}
+        y2={shoulderY + 10}
+        stroke={paint(OVERALLS)}
+        strokeWidth={2.4 + grow}
+        strokeLinecap="round"
+      />
+
+      {/* braço de trabalho + rodo */}
+      <line
+        x1={bodyX}
+        y1={shoulderY}
+        x2={tool.x}
+        y2={tool.y}
+        stroke={paint(OVERALLS)}
+        strokeWidth={2.4 + grow}
+        strokeLinecap="round"
+      />
+      <line
+        x1={tool.x - perp.x}
+        y1={tool.y - perp.y}
+        x2={tool.x + perp.x}
+        y2={tool.y + perp.y}
+        stroke={paint(INK)}
+        strokeWidth={1.8 + grow}
+        strokeLinecap="round"
+      />
+
+      {/* cabeça */}
+      <circle cx={bodyX} cy={headY} r={3.4} fill={paint(INK)} stroke={paint(INK)} strokeWidth={grow} />
+    </g>
+  );
+}
+
+/** Pintor de macacão que apaga e repinta os ponteiros. */
+function Painter({ pose, phase }: { pose: Pose; phase: number }) {
+  const rig = buildRig(pose, phase);
+
+  return (
+    <g>
+      {/* balde de tinta, sempre no lugar de descanso */}
+      <path
+        d={`M ${STAND.x - 12} ${STAND.y - 5} L ${STAND.x - 10.6} ${STAND.y} L ${STAND.x - 4.4} ${STAND.y} L ${STAND.x - 3} ${STAND.y - 5} Z`}
+        fill={INK}
+        opacity="0.85"
+      />
+      <PainterBody rig={rig} halo />
+      <PainterBody rig={rig} />
+    </g>
+  );
+}
+
 export default function SchipholClock() {
-  const now = useNow();
+  const now = useAnimationClock();
   const idle = useIdle(IDLE_DELAY_MS);
   const { isFullscreen, toggle } = useFullscreen();
   useWakeLock();
 
-  const hours = now.getHours() % 12;
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-
-  const hourAngle = (hours + minutes / 60) * 30;
-  const minuteAngle = minutes * 6;
-
-  const displayHours = now.getHours() % 12 || 12;
-  const period = now.getHours() < 12 ? "AM" : "PM";
-  const digital = `${String(displayHours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(
-    seconds,
-  ).padStart(2, "0")} ${period}`;
+  const frame = now ? computeFrame(now) : null;
+  const phase = now ? now.getSeconds() + now.getMilliseconds() / 1000 : 0;
+  const digital = now
+    ? `${String(now.getHours() % 12 || 12).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(
+        now.getSeconds(),
+      ).padStart(2, "0")} ${now.getHours() < 12 ? "AM" : "PM"}`
+    : " ";
 
   return (
     <div
       className="relative flex h-full min-h-screen w-full flex-col items-center justify-center gap-4 bg-[#0d0d0d]"
       style={{ cursor: idle ? "none" : "default" }}
     >
-      <svg viewBox="0 0 200 200" className="h-full max-h-[85vh] w-auto max-w-full aspect-square">
+      <svg viewBox="0 0 200 200" className="aspect-square h-full max-h-[85vh] w-auto max-w-full">
         <defs>
           <filter id="brush" x="-30%" y="-30%" width="160%" height="160%">
             <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="7" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.3" xChannelSelector="R" yChannelSelector="G" />
           </filter>
+          <clipPath id="face-clip">
+            <circle cx={CENTER} cy={CENTER} r={FACE_R} />
+          </clipPath>
         </defs>
 
-        {/* Face */}
-        <circle cx="100" cy="100" r="94" fill="#f2ede1" />
-        <circle cx="100" cy="100" r="94" fill="none" stroke="#0d0d0d" strokeWidth="0.75" opacity="0.15" />
+        {/* mostrador */}
+        <circle cx={CENTER} cy={CENTER} r={FACE_R} fill={FACE} />
+        <circle cx={CENTER} cy={CENTER} r={FACE_R} fill="none" stroke="#0d0d0d" strokeWidth="0.75" opacity="0.15" />
 
-        {/* Hour ticks */}
-        {HOUR_TICKS.map((i) => {
-          const angle = i * 30;
-          const isCardinal = i % 3 === 0;
-          return (
-            <line
-              key={i}
-              x1="100"
-              y1={isCardinal ? "10" : "13"}
-              x2="100"
-              y2="19"
-              stroke="#1a1a1a"
-              strokeWidth={isCardinal ? 2.6 : 1.4}
-              strokeLinecap="round"
-              transform={`rotate(${angle} 100 100)`}
-            />
-          );
-        })}
+        <g clipPath="url(#face-clip)">
+          {HOUR_TICKS.map((i) => {
+            const isCardinal = i % 3 === 0;
+            return (
+              <line
+                key={i}
+                x1={CENTER}
+                y1={isCardinal ? 10 : 13}
+                x2={CENTER}
+                y2={19}
+                stroke={INK}
+                strokeWidth={isCardinal ? 2.6 : 1.4}
+                strokeLinecap="round"
+                transform={`rotate(${i * 30} ${CENTER} ${CENTER})`}
+              />
+            );
+          })}
 
-        {/* Hour hand */}
-        <g style={{ transform: `rotate(${hourAngle}deg)`, transformOrigin: "100px 100px" }}>
-          <path
-            d="M 100 100 L 97 55 Q 100 49 103 55 Z"
-            fill="#1a1a1a"
-            filter="url(#brush)"
-          />
+          {frame && (
+            <>
+              {/* tinta que ainda não saiu de todo, logo atrás do rodo */}
+              {frame.residue && (
+                <g transform={`rotate(${frame.residue.angle} ${CENTER} ${CENTER})`} opacity="0.2" filter="url(#brush)">
+                  <line
+                    x1={CENTER}
+                    y1={CENTER - frame.residue.from}
+                    x2={CENTER}
+                    y2={CENTER - frame.residue.to}
+                    stroke={INK}
+                    strokeWidth={frame.residue.width * 1.8}
+                    strokeLinecap="round"
+                  />
+                </g>
+              )}
+
+              <g transform={`rotate(${frame.hourAngle} ${CENTER} ${CENTER})`}>
+                <path d={handPath(frame.hourLen, HOUR_W)} fill={INK} filter="url(#brush)" />
+              </g>
+
+              <g transform={`rotate(${frame.minuteAngle} ${CENTER} ${CENTER})`}>
+                <path d={handPath(frame.minuteLen, MINUTE_W)} fill={INK} filter="url(#brush)" />
+              </g>
+
+              <circle cx={CENTER} cy={CENTER} r="3" fill={INK} />
+
+              <Painter pose={frame.pose} phase={phase} />
+            </>
+          )}
         </g>
-
-        {/* Minute hand */}
-        <g
-          style={{
-            transform: `rotate(${minuteAngle}deg)`,
-            transformOrigin: "100px 100px",
-            transition: SETTLE_TRANSITION,
-          }}
-        >
-          <path
-            d="M 100 100 L 97.5 20 Q 100 13 102.5 20 Z"
-            fill="#1a1a1a"
-            filter="url(#brush)"
-          />
-        </g>
-
-        {/* Pivot */}
-        <circle cx="100" cy="100" r="3" fill="#1a1a1a" />
       </svg>
 
       <p
@@ -185,7 +502,7 @@ export default function SchipholClock() {
       <button
         type="button"
         onClick={toggle}
-        className="absolute bottom-4 right-4 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-xs text-white/70 backdrop-blur transition-opacity duration-500 hover:bg-black/60"
+        className="absolute right-4 bottom-4 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-xs text-white/70 backdrop-blur transition-opacity duration-500 hover:bg-black/60"
         style={{ opacity: idle ? 0 : 1, pointerEvents: idle ? "none" : "auto" }}
       >
         {isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
