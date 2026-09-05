@@ -9,8 +9,18 @@ const HOUR_LEN = 50;
 const MINUTE_W = 2.3;
 const HOUR_W = 3.1;
 
+/**
+ * O chão é uma linha imaginária: a escada nasce nele e o pintor nunca fica
+ * abaixo dele. Os limites de x mantêm a base da escada dentro do mostrador,
+ * que é redondo e por isso estreita justamente na altura do chão.
+ */
+const FLOOR_Y = 160;
+const LADDER_TOP_Y = 40;
+const BODY_X_MIN = 36;
+const BODY_X_MAX = 164;
+
 /** Onde o pintor fica de pé entre um serviço e outro, junto do balde. */
-const STAND = { x: 46, y: 158 };
+const STAND = { x: 46, y: FLOOR_Y };
 const IDLE_DELAY_MS = 3000;
 
 /**
@@ -31,25 +41,48 @@ function pointAt(angleDeg: number, radius: number): Point {
   return { x: CENTER + Math.cos(rad) * radius, y: CENTER + Math.sin(rad) * radius };
 }
 
-/** Onde os pés ficam para a mão alcançar `tool`. */
+/**
+ * Onde os pés ficam para a mão alcançar `tool`: um degrau abaixo do serviço,
+ * nunca acima do topo da escada nem abaixo do chão.
+ */
 function footFor(tool: Point): Point {
   const side = tool.x >= CENTER ? 1 : -1;
-  return { x: clamp(tool.x + side * 13, 20, 180), y: clamp(tool.y + 27, 36, 180) };
+  return {
+    x: clamp(tool.x + side * 13, BODY_X_MIN, BODY_X_MAX),
+    y: clamp(tool.y + 27, LADDER_TOP_Y + 6, FLOOR_Y),
+  };
 }
 
-/** Trajeto do pintor: arco por fora, para ele não atravessar o centro do mostrador. */
-function walkBetween(a: Point, b: Point, p: number): Point {
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  const dx = mid.x - CENTER;
-  const dy = mid.y - CENTER;
-  const dist = Math.hypot(dx, dy) || 1;
-  const reach = Math.min(dist + 26, 62);
-  const control = { x: CENTER + (dx / dist) * reach, y: CENTER + (dy / dist) * reach };
-  const q = 1 - p;
-  return {
-    x: q * q * a.x + 2 * q * p * control.x + p * p * b.x,
-    y: q * q * a.y + 2 * q * p * control.y + p * p * b.y,
-  };
+const lerpPoint = (a: Point, b: Point, p: number): Point => ({
+  x: a.x + (b.x - a.x) * p,
+  y: a.y + (b.y - a.y) * p,
+});
+
+/**
+ * Trajeto do pintor entre dois serviços: desce a escada, empurra ela pelo chão
+ * e sobe do outro lado — nunca atravessa o mostrador pelo ar. O tempo é
+ * repartido pela distância de cada trecho, então a velocidade é constante.
+ */
+function travelPath(a: Point, b: Point, p: number): Point {
+  const bottomA = { x: a.x, y: FLOOR_Y };
+  const bottomB = { x: b.x, y: FLOOR_Y };
+
+  const descent = FLOOR_Y - a.y;
+  const walk = Math.abs(b.x - a.x);
+  const climb = FLOOR_Y - b.y;
+  const total = descent + walk + climb;
+  if (total === 0) return a;
+
+  const endOfDescent = descent / total;
+  const endOfWalk = (descent + walk) / total;
+
+  if (p <= endOfDescent) {
+    return lerpPoint(a, bottomA, descent === 0 ? 1 : p / endOfDescent);
+  }
+  if (p <= endOfWalk) {
+    return lerpPoint(bottomA, bottomB, walk === 0 ? 1 : (p - endOfDescent) / (endOfWalk - endOfDescent));
+  }
+  return lerpPoint(bottomB, b, climb === 0 ? 1 : (p - endOfWalk) / (1 - endOfWalk));
 }
 
 function handPath(len: number, width: number) {
@@ -117,7 +150,7 @@ function computeFrame(now: Date): Frame {
     frame.hourAngle = hourOld;
     if (t < 10) {
       // Indo do ponteiro dos minutos até o das horas.
-      const foot = walkBetween(footFor(minuteTip), footFor(hourTipOld), (t - 4) / 6);
+      const foot = travelPath(footFor(minuteTip), footFor(hourTipOld), (t - 4) / 6);
       frame.pose = { kind: "travel", foot, walking: true };
     } else if (t < 14) {
       // Apagando o ponteiro das horas.
@@ -132,18 +165,18 @@ function computeFrame(now: Date): Frame {
     } else {
       // Voltando para o balde.
       frame.hourAngle = hourNew;
-      const foot = walkBetween(footFor(hourTipNew), STAND, (t - 18) / 3);
+      const foot = travelPath(footFor(hourTipNew), STAND, (t - 18) / 3);
       frame.pose = { kind: "travel", foot, walking: true };
     }
   } else if (t < 7) {
     // Voltando do ponteiro dos minutos para o balde.
-    const foot = walkBetween(footFor(minuteTip), STAND, (t - 4) / 3);
+    const foot = travelPath(footFor(minuteTip), STAND, (t - 4) / 3);
     frame.pose = { kind: "travel", foot, walking: true };
   } else if (t < 52) {
     frame.pose = { kind: "travel", foot: STAND, walking: false };
   } else if (t < 57) {
     // Indo até a ponta do ponteiro dos minutos com o rodo.
-    const foot = walkBetween(STAND, footFor(minuteTip), (t - 52) / 5);
+    const foot = travelPath(STAND, footFor(minuteTip), (t - 52) / 5);
     frame.pose = { kind: "travel", foot, walking: true };
   } else {
     // Apagando o ponteiro dos minutos, da ponta para o centro.
@@ -268,6 +301,7 @@ const HOUR_TICKS = Array.from({ length: 12 }, (_, i) => i);
 const INK = "#1a1a1a";
 const OVERALLS = "#2c4a78";
 const FACE = "#f2ede1";
+const METAL = "#8b929c";
 
 type Rig = {
   bodyX: number;
@@ -289,15 +323,57 @@ function buildRig(pose: Pose, phase: number): Rig {
     };
   }
 
-  const side = pose.foot.x >= CENTER ? 1 : -1;
+  const bodyX = clamp(pose.foot.x, BODY_X_MIN, BODY_X_MAX);
+  const feetY = clamp(pose.foot.y, LADDER_TOP_Y + 6, FLOOR_Y);
+  const side = bodyX >= CENTER ? 1 : -1;
   return {
-    bodyX: pose.foot.x,
-    feetY: pose.foot.y,
+    bodyX,
+    feetY,
     side,
     // Rodo carregado junto ao quadril enquanto anda ou espera.
     swing: pose.walking ? Math.sin(phase * 9) * 4 : 1.6,
-    tool: { x: pose.foot.x + side * 7, y: pose.foot.y - 11 },
+    tool: { x: bodyX + side * 7, y: feetY - 11 },
   };
+}
+
+/**
+ * Escada com rodízios, de altura fixa, que acompanha o pintor pelo mostrador.
+ * É ela que sustenta a figura: os pés dele pousam sempre num degrau, em vez de
+ * ficarem no ar. Fica na frente dos ponteiros (a tinta está na parede, a escada
+ * está diante dela) e atrás do pintor.
+ */
+function Ladder({ x }: { x: number }) {
+  const railX = (y: number, sign: number) => {
+    const p = (y - LADDER_TOP_Y) / (FLOOR_Y - LADDER_TOP_Y);
+    return x + sign * (3.4 + 1.4 * p);
+  };
+
+  const rungs: number[] = [];
+  for (let y = LADDER_TOP_Y + 9; y <= FLOOR_Y - 7; y += 11) rungs.push(y);
+
+  return (
+    <g stroke={METAL} strokeLinecap="round" opacity="0.75">
+      <line
+        x1={railX(LADDER_TOP_Y, -1)}
+        y1={LADDER_TOP_Y}
+        x2={railX(FLOOR_Y, -1)}
+        y2={FLOOR_Y}
+        strokeWidth="1.6"
+      />
+      <line
+        x1={railX(LADDER_TOP_Y, 1)}
+        y1={LADDER_TOP_Y}
+        x2={railX(FLOOR_Y, 1)}
+        y2={FLOOR_Y}
+        strokeWidth="1.6"
+      />
+      {rungs.map((y) => (
+        <line key={y} x1={railX(y, -1)} y1={y} x2={railX(y, 1)} y2={y} strokeWidth="1.1" />
+      ))}
+      <circle cx={railX(FLOOR_Y, -1)} cy={FLOOR_Y + 1.8} r="1.7" fill={METAL} stroke="none" />
+      <circle cx={railX(FLOOR_Y, 1)} cy={FLOOR_Y + 1.8} r="1.7" fill={METAL} stroke="none" />
+    </g>
+  );
 }
 
 /**
@@ -395,12 +471,13 @@ function Painter({ pose, phase }: { pose: Pose; phase: number }) {
 
   return (
     <g>
-      {/* balde de tinta, sempre no lugar de descanso */}
+      {/* balde de tinta, sempre no chão junto ao lugar de descanso */}
       <path
-        d={`M ${STAND.x - 12} ${STAND.y - 5} L ${STAND.x - 10.6} ${STAND.y} L ${STAND.x - 4.4} ${STAND.y} L ${STAND.x - 3} ${STAND.y - 5} Z`}
+        d={`M ${STAND.x - 14} ${STAND.y - 5} L ${STAND.x - 12.6} ${STAND.y} L ${STAND.x - 6.4} ${STAND.y} L ${STAND.x - 5} ${STAND.y - 5} Z`}
         fill={INK}
         opacity="0.85"
       />
+      <Ladder x={rig.bodyX} />
       <PainterBody rig={rig} halo />
       <PainterBody rig={rig} />
     </g>
